@@ -8,7 +8,6 @@
     <link rel="icon"
         href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌐</text></svg>">
     <style>
-        /* 基础样式 */
         * {
             margin: 0;
             padding: 0;
@@ -29,7 +28,6 @@
             padding: 20px;
         }
 
-        /* 标题样式 */
         .title {
             text-align: center;
             margin-bottom: 40px;
@@ -52,14 +50,12 @@
             opacity: 0.8;
         }
 
-        /* 卡片容器 */
         .card-container {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 20px;
         }
 
-        /* 卡片样式 */
         .card {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 15px;
@@ -114,7 +110,6 @@
             transform: scale(1.05);
         }
 
-        /* 子目录样式 */
         .subdirectory {
             border-left: 2px solid #ff6b6b;
             margin-top: 15px;
@@ -143,7 +138,6 @@
             color: #ff6b6b;
         }
 
-        /* 动画 */
         @keyframes colorFlow {
             0% {
                 background-position: 0% 50%;
@@ -157,9 +151,8 @@
                 background-position: 0% 50%;
             }
         }
-
-        /* 响应式设计 */
-        @media (max-width: 768px) {
+        
+	@media (max-width: 768px) {
             .title h1 {
                 font-size: 2rem;
                 letter-spacing: 3px;
@@ -170,7 +163,6 @@
             }
         }
 
-        /* 页脚样式 */
         footer {
             text-align: center;
             margin-top: 50px;
@@ -178,7 +170,6 @@
             border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        /* 加载动画 */
         .loading {
             position: fixed;
             top: 0;
@@ -207,7 +198,6 @@
             }
         }
 
-        /* 额外装饰 */
         .decoration {
             position: absolute;
             background: radial-gradient(circle, rgba(255, 107, 107, 0.2) 0%, rgba(255, 107, 107, 0) 70%);
@@ -233,24 +223,21 @@
 </head>
 
 <body>
-    <!-- 加载动画 -->
     <div class="loading">
         <div class="spinner"></div>
     </div>
 
-    <!-- 装饰元素 -->
     <div class="decoration decoration-1"></div>
     <div class="decoration decoration-2"></div>
 
     <div class="container">
         <div class="title">
             <h1>Dex Explorer Hub</h1>
-            <p>Enjoy yourself</p>
+	    <p>Have fun</p>
         </div>
 
         <div class="card-container">
-            <!-- 页面卡片 示例 -->
-            <div class="card" onclick="location.href='/Explorer/Beraswap/'">
+            <div class="card">
                 <div class="card-content">
                     <div class="card-icon">🌐</div>
                     <h2>Beraswap Explorer</h2>
@@ -259,7 +246,7 @@
                 </div>
             </div>
 
-            <div class="card" onclick="location.href='/Explorer/Flame/'">
+            <div class="card">
                 <div class="card-content">
                     <div class="card-icon">🌐</div>
                     <h2>Flame Explorer</h2>
@@ -268,7 +255,7 @@
                 </div>
             </div>
 
-            <div class="card" onclick="location.href='/Explorer/InitiaSwap/'">
+            <div class="card">
                 <div class="card-content">
                     <div class="card-icon">🌐</div>
                     <h2>InitiaSwap Explorer</h2>
@@ -277,7 +264,7 @@
                 </div>
             </div>
 
-            <div class="card" onclick="location.href='/Explorer/Kodia/'">
+            <div class="card">
                 <div class="card-content">
                     <div class="card-icon">🌐</div>
                     <h2>Kodia Explorer</h2>
@@ -286,7 +273,7 @@
                 </div>
             </div>
 
-            <div class="card" onclick="location.href='/Explorer/Tower/'">
+            <div class="card">
                 <div class="card-content">
                     <div class="card-icon">🌐</div>
                     <h2>Tower Explorer</h2>
@@ -352,7 +339,6 @@
     </div>
 
     <script>
-        // 页面加载完成后隐藏加载动画
         window.addEventListener('load', function () {
             setTimeout(function () {
                 document.querySelector('.loading').style.opacity = '0';
@@ -362,9 +348,7 @@
             }, 1000);
         });
 
-        // 为卡片添加动态效果
         document.querySelectorAll('.card').forEach(function (card, index) {
-            // 延迟显示卡片，形成瀑布流效果
             card.style.opacity = '0';
             card.style.transform = 'translateY(20px)';
             setTimeout(function () {
