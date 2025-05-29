@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="/Explorer/Beraswap/icon.svg" type="image/svg+xml" sizes="any">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beraswap Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    transitionProperty: {
+                        'colors': 'background-color, border-color, color, fill, stroke'
+                    }
+                }
+            }
+        }
+        // 初始化暗黑模式状态
+        let isDarkMode = localStorage.getItem('darkMode') === 'true';
+
+        // 交易记录数据状态
+        let transactions = [];
+
+        // 时间格式化函数
+        const formatTime = (timestamp) => {
+            const date = new Date(timestamp * 1000);
+            return `${date.toLocaleDateString()} ${date.toLocaleTimeString('zh-CN', { hour12: false })}`;
+        };
+
+        // 获取时间差描述
+        const timeAgo = (timestamp) => {
+            const seconds = Math.floor((Date.now() - timestamp * 1000) / 1000);
+            const intervals = [
+                [31536000, '年'],
+                [2592000, '月'],
+                [86400, '天'],
+                [3600, '小时'],
+                [60, '分钟']
+            ];
+
+            for (const [secondsInterval, unit] of intervals) {
+                const interval = Math.floor(seconds / secondsInterval);
+                if (interval >= 1) return `${interval}${unit}前`;
+            }
+            return '刚刚';
+        };
+
+        // 代币映射表
+        const TOKEN_MAP = {
+            '0xfcbd14dc51f0a4d49d5e53c2e0950e0bc26d0dce': 'HONEY',
+            '0x6969696969696969696969696969696969696969': 'WBERA'
+        };
+
+        // 获取代币名称
+        const getTokenName = (address) => {
+            return TOKEN_MAP[address.toLowerCase()] || `${address.slice(0, 4)}...${address.slice(-4)}`;
+        };
+
+        // 获取交易数据
+        const fetchTransactions = async () => {
+            try {
+                const response = await fetch('https://api.berachain.com/', {
+                    method: 'POST',
+                    headers: {
+                        'accept': '*/*',
+                        'content-type': 'application/json',
+                        'origin': 'https://hub.berachain.com'
+                    },
+                    body: JSON.stringify({
+                        operationName: "GetPoolEvents",
+                        variables: {
+                            poolId: "0x2c4a603a2aa5596287a06886862dc29d56dbc354000200000000000000000002",
+                            typeIn: ["SWAP"],
+                            chain: "BERACHAIN"
+                        },
+                        query: `query GetPoolEvents($poolId: String!, $typeIn: [GqlPoolEventType!]!, $chain: GqlChain!) {
+                        poolGetEvents(
+                            poolId: $poolId
+                            chain: $chain
+                            range: NINETY_DAYS
+                            typeIn: $typeIn
+                        ) {
+                            ...PoolEvent
+                            __typename
+                        }
+                    }
+
+                    fragment PoolEvent on GqlPoolEvent {
+                    id
+                    valueUSD
+                    tx
+                    type
+                    sender
+                    timestamp
+                    ...GqlPoolSwapEventCowAmm
+                    ...GqlPoolSwapEventV3
+                    ...GqlPoolAddRemoveEventV3
+                    __typename
+                    }
+
+                    fragment GqlPoolSwapEventCowAmm on GqlPoolSwapEventCowAmm {
+                    tokenIn {
+                        address
+                        amount
+                        __typename
+                    }
+                    tokenOut {
+                        address
+                        amount
+                        __typename
+                    }
+                    __typename
+                    }
+
+                    fragment GqlPoolSwapEventV3 on GqlPoolSwapEventV3 {
+                    tokenIn {
+                        address
+                        amount
+                        __typename
+                    }
+                    tokenOut {
+                        address
+                        amount
+                        __typename
+                    }
+                    __typename
+                    }
+
+                    fragment GqlPoolAddRemoveEventV3 on GqlPoolAddRemoveEventV3 {
+                    tokens {
+                        address
+                        amount
+                        __typename
+                    }
+                    __typename
+                    }`
+                    })
+                });
+
+                const data = await response.json();
+                transactions = data.data.poolGetEvents;
+                renderTransactions();
+            } catch (error) {
+                console.error('获取交易数据失败:', error);
+            }
+        };
+
+        const handleRefresh = async () => {
+            const btn = document.getElementById('refresh-btn');
+            const icon = document.getElementById('refresh-icon');
+
+            // 禁用按钮并添加动画
+            btn.disabled = true;
+            icon.classList.add('refreshing');
+
+            try {
+                await fetchTransactions();
+            } finally {
+                // 恢复按钮状态
+                setTimeout(() => {
+                    btn.disabled = false;
+                    icon.classList.remove('refreshing');
+                }, 1000); // 最小展示时间1秒
+            }
+        };
+
+        // 渲染交易记录
+        const renderTransactions = () => {
+            const container = document.getElementById('transactions-container');
+            container.innerHTML = transactions.map(tx => {
+                const tokenInName = getTokenName(tx.tokenIn.address);
+                const tokenOutName = getTokenName(tx.tokenOut.address);
+
+                return `
+                <div 
+                    class="p-4 border-b dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors"
+                    onclick="window.open('https://berascan.com/tx/${tx.tx}', '_blank')"
+                >
+                    <div class="flex justify-between items-center">
+                        <div class="flex-1">
+                            <div class="text-sm text-gray-600 dark:text-gray-400">
+                                ${formatTime(tx.timestamp)} (${timeAgo(tx.timestamp)})
+                            </div>
+                            <div class="text-xs text-gray-500 dark:text-gray-500 truncate">
+                                ${tx.sender.slice(0, 6)}...${tx.sender.slice(-4)}
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-4">
+                            <div class="text-red-500 font-mono">
+                                ${-1 * parseFloat(tx.tokenIn.amount).toFixed(4)} ${tokenInName}
+                            </div>
+                            <div class="text-gray-400">→</div>
+                            <div class="text-green-500 font-mono">
+                                ${parseFloat(tx.tokenOut.amount).toFixed(4)} ${tokenOutName}
+                            </div>
+                            <div class="text-gray-500 text-sm">
+                                (${(parseFloat(tx.tokenOut.amount) / parseFloat(tx.tokenIn.amount)).toFixed(4)})
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            }).join('');
+        };
+        const toggleDarkMode = () => {
+            const html = document.documentElement;
+            isDarkMode = !html.classList.contains('dark');
+
+            html.classList.toggle('dark', isDarkMode);
+            localStorage.setItem('darkMode', isDarkMode);
+
+            // 图标切换逻辑
+            document.getElementById('dark-icon').classList.toggle('hidden', isDarkMode);
+            document.getElementById('light-icon').classList.toggle('hidden', !isDarkMode);
+        };
+        // 初始化逻辑优化
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedMode = localStorage.getItem('darkMode') === 'true';
+            document.documentElement.classList.toggle('dark', savedMode);
+
+            // 初始化图标状态
+            document.getElementById('dark-icon').classList.toggle('hidden', savedMode);
+            document.getElementById('light-icon').classList.toggle('hidden', !savedMode);
+
+            fetchTransactions();
+        });
+    </script>
+</head>
+
+<body class="h-full bg-white dark:bg-gray-900 transition-colors duration-300">
+    <!-- 控制栏 -->
+    <div class="fixed w-full bg-white dark:bg-gray-800 shadow-sm z-10">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-baseline space-x-4">
+                <h1 class="text-xl font-semibold dark:text-white">
+                    <a href="https://hub.berachain.com/pools/0x2c4a603a2aa5596287a06886862dc29d56dbc354000200000000000000000002/details/"
+                        target="_blank" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                        rel="noopener noreferrer">
+                        WBERA | HONEY
+                    </a>
+                </h1>
+                <div class="flex space-x-2 text-sm text-gray-600 dark:text-gray-300">
+                    <span>Weighted</span>
+                    <span>•</span>
+                    <span>0.30%</span>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-4">
+                <button onclick="handleRefresh()" id="refresh-btn"
+                    class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                    <svg id="refresh-icon" class="w-6 h-6 text-gray-600 dark:text-gray-300 transition-transform"
+                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                </button>
+                <button onclick="toggleDarkMode()"
+                    class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                    <svg id="dark-icon" class="w-6 h-6 text-gray-600 dark:hidden" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                    </svg>
+                    <svg id="light-icon" class="w-6 h-6 text-gray-400 hidden dark:block" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 交易记录容器 -->
+    <div class="max-w-6xl mx-auto pt-20 px-4">
+        <div id="transactions-container" class="divide-y dark:divide-gray-700"></div>
+    </div>
+</body>
+<style>
+    /* 新增旋转动画 */
+    @keyframes rotate {
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .refreshing {
+        animation: rotate 1s linear infinite;
+    }
+</style>
+
+</html>

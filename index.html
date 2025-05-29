@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExplorerHub</title>
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌐</text></svg>">
+    <style>
+        /* 基础样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* 标题样式 */
+        .title {
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .title h1 {
+            font-size: 3rem;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #ff6b6b, #6b47ff, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: colorFlow 10s infinite linear;
+        }
+
+        .title p {
+            font-size: 1.2rem;
+            opacity: 0.8;
+        }
+
+        /* 卡片容器 */
+        .card-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        /* 卡片样式 */
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            cursor: pointer;
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-content {
+            padding: 25px;
+        }
+
+        .card h2 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            color: #4ecdc4;
+        }
+
+        .card p {
+            margin-bottom: 20px;
+            line-height: 1.6;
+            opacity: 0.8;
+        }
+
+        .card-icon {
+            font-size: 2rem;
+            margin-bottom: 15px;
+            color: #ff6b6b;
+        }
+
+        .card-link {
+            display: inline-block;
+            padding: 10px 20px;
+            background: linear-gradient(to right, #4ecdc4, #6b47ff);
+            color: white;
+            text-decoration: none;
+            border-radius: 30px;
+            transition: transform 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .card-link:hover {
+            transform: scale(1.05);
+        }
+
+        /* 子目录样式 */
+        .subdirectory {
+            border-left: 2px solid #ff6b6b;
+            margin-top: 15px;
+            padding-left: 15px;
+        }
+
+        .subdirectory-title {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: #ff6b6b;
+        }
+
+        .subdirectory-item {
+            margin-bottom: 8px;
+        }
+
+        .subdirectory-link {
+            color: #4ecdc4;
+            text-decoration: none;
+            transition: color 0.3s ease;
+            display: block;
+            padding: 5px 0;
+        }
+
+        .subdirectory-link:hover {
+            color: #ff6b6b;
+        }
+
+        /* 动画 */
+        @keyframes colorFlow {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .title h1 {
+                font-size: 2rem;
+                letter-spacing: 3px;
+            }
+
+            .card-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 页脚样式 */
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* 加载动画 */
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #1a1a2e;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #4ecdc4;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* 额外装饰 */
+        .decoration {
+            position: absolute;
+            background: radial-gradient(circle, rgba(255, 107, 107, 0.2) 0%, rgba(255, 107, 107, 0) 70%);
+            border-radius: 50%;
+            z-index: -1;
+        }
+
+        .decoration-1 {
+            width: 300px;
+            height: 300px;
+            top: -100px;
+            right: -100px;
+        }
+
+        .decoration-2 {
+            width: 200px;
+            height: 200px;
+            bottom: 100px;
+            left: -50px;
+            background: radial-gradient(circle, rgba(78, 205, 196, 0.2) 0%, rgba(78, 205, 196, 0) 70%);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 加载动画 -->
+    <div class="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- 装饰元素 -->
+    <div class="decoration decoration-1"></div>
+    <div class="decoration decoration-2"></div>
+
+    <div class="container">
+        <div class="title">
+            <h1>Dex Explorer Hub</h1>
+            <p>Enjoy yourself</p>
+        </div>
+
+        <div class="card-container">
+            <!-- 页面卡片 示例 -->
+            <div class="card" onclick="location.href='/Explorer/Beraswap/'">
+                <div class="card-content">
+                    <div class="card-icon">🌐</div>
+                    <h2>Beraswap Explorer</h2>
+                    <p>Berachain Beraswap Explorer</p>
+                    <a href="/Explorer/Beraswap/" class="card-link">Detail>>></a>
+                </div>
+            </div>
+
+            <div class="card" onclick="location.href='/Explorer/Flame/'">
+                <div class="card-content">
+                    <div class="card-icon">🌐</div>
+                    <h2>Flame Explorer</h2>
+                    <p>Astria Flame Explorer</p>
+                    <a href="/Explorer/Flame/" class="card-link">Detail>>></a>
+                </div>
+            </div>
+
+            <div class="card" onclick="location.href='/Explorer/InitiaSwap/'">
+                <div class="card-content">
+                    <div class="card-icon">🌐</div>
+                    <h2>InitiaSwap Explorer</h2>
+                    <p>Initia Swap Explorer</p>
+                    <a href="/Explorer/InitiaSwap/" class="card-link">Detail>>></a>
+                </div>
+            </div>
+
+            <div class="card" onclick="location.href='/Explorer/Kodia/'">
+                <div class="card-content">
+                    <div class="card-icon">🌐</div>
+                    <h2>Kodia Explorer</h2>
+                    <p>Berachain Kodia Explorer</p>
+                    <a href="/Explorer/Kodia/" class="card-link">Detail>>></a>
+                </div>
+            </div>
+
+            <div class="card" onclick="location.href='/Explorer/Tower/'">
+                <div class="card-content">
+                    <div class="card-icon">🌐</div>
+                    <h2>Tower Explorer</h2>
+                    <p>Babylon Tower Explorer</p>
+                    <a href="/Explorer/Tower/" class="card-link">Detail>>></a>
+                </div>
+            </div>
+
+            <!-- 子目录卡片 示例 -->
+            <!-- <div class="card">
+                <div class="card-content">
+                    <div class="card-icon">📁</div>
+                    <h2>子目录</h2>
+                    <p>浏览此子目录中的其他页面和内容。</p>
+
+                    <div class="subdirectory">
+                        <div class="subdirectory-title">页面列表</div>
+                        <div class="subdirectory-item">
+                            <a href="subdirectory/subpage1.html" class="subdirectory-link">子页面 1</a>
+                        </div>
+                        <div class="subdirectory-item">
+                            <a href="subdirectory/subpage2.html" class="subdirectory-link">子页面 2</a>
+                        </div>
+                        <div class="subdirectory-item">
+                            <a href="subdirectory/subpage3.html" class="subdirectory-link">子页面 3</a>
+                        </div>
+                    </div>
+                </div>
+            </div> -->
+
+            <!-- 另一个子目录卡片 示例 -->
+            <!-- <div class="card">
+                <div class="card-content">
+                    <div class="card-icon">🗂️</div>
+                    <h2>资源目录</h2>
+                    <p>查看各种可用的资源文件和下载内容。</p>
+
+                    <div class="subdirectory">
+                        <div class="subdirectory-title">资源列表</div>
+                        <div class="subdirectory-item">
+                            <a href="resources/document1.html" class="subdirectory-link">文档 1</a>
+                        </div>
+                        <div class="subdirectory-item">
+                            <a href="resources/document2.html" class="subdirectory-link">文档 2</a>
+                        </div>
+                    </div>
+                </div>
+            </div> -->
+
+            <!-- <div class="card" onclick="location.href='contact.html'">
+                <div class="card-content">
+                    <div class="card-icon">📞</div>
+                    <h2>联系页面</h2>
+                    <p>如果您有任何问题或建议，欢迎随时联系我们。</p>
+                    <a href="contact.html" class="card-link">联系我们</a>
+                </div>
+            </div> -->
+        </div>
+
+        <footer>
+            <p>Just do it</p>
+        </footer>
+    </div>
+
+    <script>
+        // 页面加载完成后隐藏加载动画
+        window.addEventListener('load', function () {
+            setTimeout(function () {
+                document.querySelector('.loading').style.opacity = '0';
+                setTimeout(function () {
+                    document.querySelector('.loading').style.display = 'none';
+                }, 500);
+            }, 1000);
+        });
+
+        // 为卡片添加动态效果
+        document.querySelectorAll('.card').forEach(function (card, index) {
+            // 延迟显示卡片，形成瀑布流效果
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            setTimeout(function () {
+                card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, 100 * index);
+        });
+    </script>
+</body>
+
+</html>
