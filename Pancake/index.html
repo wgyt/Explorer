@@ -125,7 +125,8 @@
                 pools(
                     where: {id_in: [
                         "0xbdccafb234be6dc2545b0c25b0a5f5d9d1124228",
-                        "0x5968feacba91d55010975e0cfe8acfc32664ad33"
+                        "0x5968feacba91d55010975e0cfe8acfc32664ad33",
+	                "0xbe77ac86750fb0359fa623e63e7f009979bb701c",
                     ]}
                     orderBy: totalValueLockedUSD
                     orderDirection: desc
@@ -163,6 +164,14 @@
                             quoteTokenSymbol: "USDT",
                             feeTier: "0.01%",
                         },
+			"0xbe77ac86750fb0359fa623e63e7f009979bb701c": {
+			    id: "0xbe77ac86750fb0359fa623e63e7f009979bb701c",
+                            baseToken: "0x30c60b20c25b2810ca524810467a0c342294fc61",
+                            baseTokenSymbol: "TAIKO",
+                            quoteToken: "0x55d398326f99059ff775485246999027b3197955",
+                            quoteTokenSymbol: "USDT",
+                            feeTier: "0.01%",
+			},
                     },
                     selectedPool: "0xbdccafb234be6dc2545b0c25b0a5f5d9d1124228",
                     swaps: [],
