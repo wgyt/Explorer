@@ -353,14 +353,14 @@
                     let amountOut = 0;
                     let tokenIn = {};
                     let tokenOut = {};
-                    if (amount0 < 0) {
-                        amountIn = Math.abs(amount0);
-                        amountOut = amount1;
+		    if (amount0 > 0) {
+                        amountIn = amount0;
+                        amountOut = Math.abs(amount1);
                         tokenIn = swap.token0;
                         tokenOut = swap.token1;
                     } else {
-                        amountIn = Math.abs(amount1);
-                        amountOut = amount0;
+                        amountIn = amount1;
+                        amountOut = Math.abs(amount0);
                         tokenIn = swap.token1;
                         tokenOut = swap.token0;
                     }
