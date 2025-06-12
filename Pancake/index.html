@@ -126,7 +126,7 @@
                     where: {id_in: [
                         "0xbdccafb234be6dc2545b0c25b0a5f5d9d1124228",
                         "0x5968feacba91d55010975e0cfe8acfc32664ad33",
-	                "0xbe77ac86750fb0359fa623e63e7f009979bb701c",
+                        "0xbe77ac86750fb0359fa623e63e7f009979bb701c",
                     ]}
                     orderBy: totalValueLockedUSD
                     orderDirection: desc
@@ -148,14 +148,14 @@
                     currentTime: Date.now(),
                     isDarkMode: true,
                     pools: {
-			"0x5ed54fe795a56d71d1a4b0d716d111b846a4be03": {
-			    id: "0x5ed54fe795a56d71d1a4b0d716d111b846a4be03",
-			    baseToken: "0x39702843A6733932ec7CE0dde404e5A6DBd8C989",
+                        "0x5ed54fe795a56d71d1a4b0d716d111b846a4be03": {
+                            id: "0x5ed54fe795a56d71d1a4b0d716d111b846a4be03",
+                            baseToken: "0x39702843A6733932ec7CE0dde404e5A6DBd8C989",
                             baseTokenSymbol: "AVAIL",
                             quoteToken: "0x55d398326f99059ff775485246999027b3197955",
                             quoteTokenSymbol: "USDT",
                             feeTier: "0.01%",
-			},
+                        },
                         "0xbdccafb234be6dc2545b0c25b0a5f5d9d1124228": {
                             id: "0xbdccafb234be6dc2545b0c25b0a5f5d9d1124228",
                             baseToken: "0xa0c56a8c0692bd10b3fa8f8ba79cf5332b7107f9",
@@ -172,14 +172,14 @@
                             quoteTokenSymbol: "USDT",
                             feeTier: "0.01%",
                         },
-			"0xbe77ac86750fb0359fa623e63e7f009979bb701c": {
-			    id: "0xbe77ac86750fb0359fa623e63e7f009979bb701c",
+                        "0xbe77ac86750fb0359fa623e63e7f009979bb701c": {
+                            id: "0xbe77ac86750fb0359fa623e63e7f009979bb701c",
                             baseToken: "0x30c60b20c25b2810ca524810467a0c342294fc61",
                             baseTokenSymbol: "TAIKO",
                             quoteToken: "0x55d398326f99059ff775485246999027b3197955",
                             quoteTokenSymbol: "USDT",
                             feeTier: "0.01%",
-			},
+                        },
                     },
                     selectedPool: "0x5ed54fe795a56d71d1a4b0d716d111b846a4be03",
                     swaps: [],
@@ -286,6 +286,7 @@
                 async loadSwaps(isRefresh = false, limit = 100, timestampLTE) {
                     if (isRefresh) {
                         this.swaps = [];
+                        this.existingHashes = new Set();
                     }
                     if (this.loading || !this.selectedPool) return;
 
@@ -509,7 +510,7 @@
                     this.refreshKey++; // 强制重新渲染图标
                     try {
                         this.currentTime = Date.now();
-                        await this.loadSwaps(true, 100, Math.floor(Date.now() / 1000));
+                        await this.loadSwaps(true, 100, Math.floor(this.currentTime / 1000));
                     } catch (error) {
                         console.error('刷新失败:', error);
                     }

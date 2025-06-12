@@ -269,6 +269,7 @@
                 async loadSwaps(isRefresh = false, limit = 100, timestampLTE) {
                     if (isRefresh) {
                         this.swaps = [];
+			this.existingHashes.clear(); // 重置时清空哈希集合
                     }
                     if (this.loading || !this.selectedPool) return;
 
