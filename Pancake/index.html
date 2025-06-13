@@ -156,6 +156,14 @@
                             quoteTokenSymbol: "USDT",
                             feeTier: "0.01%",
                         },
+			"0x30d59a44930b3994c116846efe55fc8fcf608aa8": {
+                            id: "0x30d59a44930b3994c116846efe55fc8fcf608aa8",
+                            baseToken: "0x3fefe29dA25BEa166fB5f6ADe7b5976D2b0e586B",
+                            baseTokenSymbol: "ROAM",
+                            quoteToken: "0x55d398326f99059ff775485246999027b3197955",
+                            quoteTokenSymbol: "USDT",
+                            feeTier: "0.01%",
+                        },
                         "0xbdccafb234be6dc2545b0c25b0a5f5d9d1124228": {
                             id: "0xbdccafb234be6dc2545b0c25b0a5f5d9d1124228",
                             baseToken: "0xa0c56a8c0692bd10b3fa8f8ba79cf5332b7107f9",
@@ -286,7 +294,7 @@
                 async loadSwaps(isRefresh = false, limit = 100, timestampLTE) {
                     if (isRefresh) {
                         this.swaps = [];
-                        this.existingHashes = new Set();
+			this.existingHashes.clear(); // 重置时清空哈希集合
                     }
                     if (this.loading || !this.selectedPool) return;
 
