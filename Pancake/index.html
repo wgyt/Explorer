@@ -213,7 +213,7 @@
                             feeTier: "0.01%",
                         },
                     },
-                    selectedPool: Object.keys(this.pools)[0],
+                    selectedPool: "",
                     swaps: [],
                     loading: false,
                     txGraphEndpointID: "ChmxqA9bX71cB2cQTRRULbWUBKoMRk7oh3JnpZShDQ2V",
@@ -225,6 +225,10 @@
                     existingHashes: new Set(), // 用于存储已存在的交易哈希,防止请求分页数据出现重复
                 }
             },
+	    created() {
+    		// 在组件创建后，设置 selectedPool 为 pools 的第一个 key
+    		this.selectedPool = Object.keys(this.pools)[0];
+  	    },
             mounted() {
                 // 启动时间更新定时器
                 this.timeInterval = setInterval(() => {
