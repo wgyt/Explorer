@@ -8,6 +8,7 @@
     <title>PancakeV3 Explorer | BSC</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/web3@4.16.0/dist/web3.min.js"></script>
 </head>
 
 <body class="h-full bg-white dark:bg-gray-900 transition-colors duration-300">
@@ -17,16 +18,38 @@
             class="fixed top-0 left-0 right-0 z-50 dark:bg-gray-900 bg-gray-100 p-4 flex justify-between items-center shadow-md">
             <!-- 左侧：流动池选择器 -->
             <div class="flex-1 max-w-xs">
-                <select v-model="selectedPool" @change="handlePoolChange" class="bg-white text-gray-900 border-gray-300  /* 新增亮色模式基础样式 */
-              dark:bg-gray-800 dark:text-white dark:border-gray-600
-              p-2 rounded-lg w-48 border-2  /* 加粗边框 */
-              mobile:w-32 focus:ring-2 focus:ring-blue-300  /* 添加聚焦效果 */
-              transition-colors duration-200"> <!-- 添加过渡效果 -->
-                    <option v-for="(poolInfo, contractAddress) in pools" :key="contractAddress" :value="contractAddress"
-                        class="bg-white dark:bg-gray-800"> <!-- 添加选项背景色 -->
-                        {{ poolInfo.baseTokenSymbol }}/{{ poolInfo.quoteTokenSymbol }} {{ poolInfo.feeTier }}
-                    </option>
-                </select>
+                <!-- 整合式下拉搜索组件 -->
+                <div class="relative">
+                    <button @click="toggleDropdown"
+                        class="w-3/4 bg-white text-gray-900 border-gray-300 dark:bg-gray-800 dark:text-white dark:border-gray-600 p-2 rounded-lg border-2 focus:ring-2 focus:ring-blue-300 transition-colors duration-200 text-left flex justify-between items-center">
+                        <span>{{ selectedPool ? getPoolLabel(selectedPool) : '选择池子' }}</span>
+                        <i class="fa fa-chevron-down transition-transform duration-200"
+                            :class="{ 'rotate-180': isDropdownOpen }"></i>
+                    </button>
+
+                    <div v-show="isDropdownOpen"
+                        class="absolute z-10 top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-300 dark:border-gray-600 max-h-60 overflow-y-auto">
+                        <!-- 搜索框 -->
+                        <div class="p-2 border-b border-gray-200 dark:border-gray-700">
+                            <input v-model="searchQuery" @input="filterPools" type="text"
+                                class="bg-white text-gray-900 border-gray-300 dark:bg-gray-700 dark:text-white dark:border-gray-600 p-2 rounded-lg w-full border focus:ring-2 focus:ring-blue-300 transition-colors duration-200"
+                                placeholder="搜索池子">
+                        </div>
+
+                        <!-- 选项列表 -->
+                        <div class="p-1">
+                            <div v-for="(poolInfo, contractAddress) in filteredPools" :key="contractAddress"
+                                @click="selectPool(contractAddress)"
+                                class="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors">
+                                {{ poolInfo.baseTokenSymbol }}/{{ poolInfo.quoteTokenSymbol }} {{ poolInfo.feeTier }}
+                            </div>
+                            <div v-if="Object.keys(filteredPools).length === 0 && searchQuery"
+                                class="p-2 text-gray-500 dark:text-gray-400 italic">
+                                未找到匹配的池子
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
             <!-- 中间：刷新按钮 -->
             <div class="mx-4">
@@ -141,6 +164,48 @@
             }
         `;
 
+        // 代币合约ABI
+        const TOKEN_ABI = [
+            {
+                "constant": true,
+                "inputs": [],
+                "name": "symbol",
+                "outputs": [{ "name": "", "type": "string" }],
+                "payable": false,
+                "stateMutability": "view",
+                "type": "function"
+            }
+        ];
+
+        // 流动池合约ABI（整合了token0、token1和fee）
+        const POOL_ABI = [
+            {
+                "constant": true,
+                "inputs": [],
+                "name": "token0",
+                "outputs": [{ "name": "", "type": "address" }],
+                "payable": false,
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "constant": true,
+                "inputs": [],
+                "name": "token1",
+                "outputs": [{ "name": "", "type": "address" }],
+                "payable": false,
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "fee",
+                "outputs": [{ "internalType": "uint24", "name": "", "type": "uint24" }],
+                "stateMutability": "view",
+                "type": "function"
+            }
+        ];
+
         createApp({
             data() {
                 return {
@@ -148,15 +213,15 @@
                     currentTime: Date.now(),
                     isDarkMode: true,
                     pools: {
-			"0x39d2d7bebd1487ffea308fab8a6fe2d737600e1a": {
-			    id: "0x39d2d7bebd1487ffea308fab8a6fe2d737600e1a",
+                        "0x39d2d7bebd1487ffea308fab8a6fe2d737600e1a": {
+                            id: "0x39d2d7bebd1487ffea308fab8a6fe2d737600e1a",
                             baseToken: "0xc61eb549acf4a05ed6e3fe0966f5e213b23541ce",
                             baseTokenSymbol: "NUMI",
                             quoteToken: "0x55d398326f99059ff775485246999027b3197955",
                             quoteTokenSymbol: "USDT",
                             feeTier: "0.01%",
-			},
-			"0x876ddc0df8ea26e47515e8041a771b998ee4ba15": {
+                        },
+                        "0x876ddc0df8ea26e47515e8041a771b998ee4ba15": {
                             id: "0x876ddc0df8ea26e47515e8041a771b998ee4ba15",
                             baseToken: "0x1a9fd6ec3144da3dd6ea13ec1c25c58423a379b1",
                             baseTokenSymbol: "SPA",
@@ -164,7 +229,7 @@
                             quoteTokenSymbol: "USDT",
                             feeTier: "0.01%",
                         },
-			"0x83a9fd66c9515536d630cf818c41190b0372c6f6": {
+                        "0x83a9fd66c9515536d630cf818c41190b0372c6f6": {
                             id: "0x83a9fd66c9515536d630cf818c41190b0372c6f6",
                             baseToken: "0x8b9Ee39195eA99d6ddD68030F44131116bc218F6",
                             baseTokenSymbol: "PEAQ",
@@ -172,22 +237,22 @@
                             quoteTokenSymbol: "USDC",
                             feeTier: "0.01%",
                         },
-			"0x6045479ab46df901e7c86977ed22ddeb80728165": {
-			    id: "0x6045479ab46df901e7c86977ed22ddeb80728165",
-			    baseToken: "0xc08cd26474722ce93f4d0c34d16201461c10aa8c",
+                        "0x6045479ab46df901e7c86977ed22ddeb80728165": {
+                            id: "0x6045479ab46df901e7c86977ed22ddeb80728165",
+                            baseToken: "0xc08cd26474722ce93f4d0c34d16201461c10aa8c",
                             baseTokenSymbol: "CARV",
                             quoteToken: "0x8d0d000ee44948fc98c9b98a4fa4921476f08b0d",
                             quoteTokenSymbol: "USD1",
                             feeTier: "0.01%",
-			},
-			"0xcacd3583c7ef55126099be733b12672c60e2ab23": {
-			    id: "0xcacd3583c7ef55126099be733b12672c60e2ab23",
+                        },
+                        "0xcacd3583c7ef55126099be733b12672c60e2ab23": {
+                            id: "0xcacd3583c7ef55126099be733b12672c60e2ab23",
                             baseToken: "0x75a5863A19aF60ec0098d62ED8C34cc594fB470f",
                             baseTokenSymbol: "MPLX",
                             quoteToken: "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d",
                             quoteTokenSymbol: "USDC",
                             feeTier: "0.01%",
-			},
+                        },
                         "0x5ed54fe795a56d71d1a4b0d716d111b846a4be03": {
                             id: "0x5ed54fe795a56d71d1a4b0d716d111b846a4be03",
                             baseToken: "0x39702843A6733932ec7CE0dde404e5A6DBd8C989",
@@ -196,7 +261,7 @@
                             quoteTokenSymbol: "USDT",
                             feeTier: "0.01%",
                         },
-			"0x30d59a44930b3994c116846efe55fc8fcf608aa8": {
+                        "0x30d59a44930b3994c116846efe55fc8fcf608aa8": {
                             id: "0x30d59a44930b3994c116846efe55fc8fcf608aa8",
                             baseToken: "0x3fefe29dA25BEa166fB5f6ADe7b5976D2b0e586B",
                             baseTokenSymbol: "ROAM",
@@ -239,12 +304,16 @@
                             !localStorage.getItem('darkMode')),
                     scrollHandler: null,
                     existingHashes: new Set(), // 用于存储已存在的交易哈希,防止请求分页数据出现重复
+                    searchQuery: '', // 新增搜索查询变量
+                    filteredPools: {}, // 新增过滤后的池子变量
+                    isDropdownOpen: false // 新增下拉框状态
                 }
             },
-	    created() {
-    		// 在组件创建后，设置 selectedPool 为 pools 的第一个 key
-    		this.selectedPool = Object.keys(this.pools)[0];
-  	    },
+            created() {
+                // 在组件创建后，设置 selectedPool 为 pools 的第一个 key
+                this.selectedPool = Object.keys(this.pools)[0];
+                this.filteredPools = this.pools; // 初始化过滤后的池子
+            },
             mounted() {
                 // 启动时间更新定时器
                 this.timeInterval = setInterval(() => {
@@ -254,6 +323,7 @@
             beforeUnmount() {
                 clearInterval(this.timeInterval);
                 window.removeEventListener('scroll', this.scrollHandler);
+                document.removeEventListener('click', this.handleOutsideClick);
             },
             computed: {
                 filteredSwaps() {
@@ -273,6 +343,38 @@
                 await this.loadSwaps(false, 100, Math.floor(Date.now() / 1000));
             },
             methods: {
+                // 切换下拉框显示状态
+                toggleDropdown() {
+                    this.isDropdownOpen = !this.isDropdownOpen;
+                    if (this.isDropdownOpen) {
+                        this.searchQuery = '';
+                        this.filteredPools = this.pools;
+                    }
+                },
+
+                // 选择池子
+                selectPool(contractAddress) {
+                    this.selectedPool = contractAddress;
+                    this.isDropdownOpen = false;
+                    this.loadSwaps(true, 100, Math.floor(Date.now() / 1000));
+                },
+
+                // 获取池子标签显示
+                getPoolLabel(contractAddress) {
+                    const pool = this.pools[contractAddress];
+                    return pool ? `${pool.baseTokenSymbol}/${pool.quoteTokenSymbol} ${pool.feeTier}` : '未知池子';
+                },
+
+                // 处理点击外部关闭下拉框
+                handleOutsideClick(event) {
+                    const dropdown = document.querySelector('.absolute.z-10');
+                    const button = document.querySelector('button[@click="toggleDropdown"]');
+
+                    if (dropdown && !dropdown.contains(event.target) && button && !button.contains(event.target)) {
+                        this.isDropdownOpen = false;
+                    }
+                },
+
                 // 新增change事件处理
                 handlePoolChange(event) {
                     console.log(this.selectedPool);
@@ -325,6 +427,98 @@
                     }
                 },
 
+                filterPools() {
+                    if (!this.searchQuery) {
+                        this.filteredPools = this.pools;
+                        return;
+                    }
+
+                    const query = this.searchQuery.toLowerCase();
+                    this.filteredPools = {};
+
+                    // 先在已有池子中查找
+                    for (const [address, pool] of Object.entries(this.pools)) {
+                        const { baseTokenSymbol, quoteTokenSymbol } = pool;
+                        if (address.toLowerCase().includes(query) ||
+                            baseTokenSymbol.toLowerCase().includes(query) ||
+                            quoteTokenSymbol.toLowerCase().includes(query)) {
+                            this.filteredPools[address] = pool;
+                        }
+                    }
+
+                    // 如果输入的是池子地址且未找到，调用接口获取信息
+                    if (query.startsWith('0x') && Object.keys(this.filteredPools).length === 0) {
+                        this.fetchPoolInfo(query);
+                    }
+                },
+
+                async fetchPoolInfo(poolAddress) {
+                    try {
+                        const Web3 = window.Web3;
+                        const rpcNodes = [
+                            "https://bsc-dataseed.bnbchain.org",
+                            "https://bsc-dataseed-public.bnbchain.org",
+                            "https://bscrpc.pancakeswap.finance",
+                            "https://bsc-mainnet.public.blastapi.io",
+                            "https://bsc.drpc.org",
+                            "https://bsc-rpc.publicnode.com"
+                        ];
+
+                        let web3;
+                        for (const node of rpcNodes) {
+                            try {
+                                web3 = new Web3(new Web3.providers.HttpProvider(node));
+                                await web3.eth.getBlockNumber();
+                                break;
+                            } catch (error) {
+                                console.error(`连接到 ${node} 失败:`, error);
+                            }
+                        }
+
+                        if (!web3) {
+                            throw new Error('无法连接到任何 RPC 节点');
+                        }
+
+                        // 创建流动池合约实例
+                        const poolContract = new web3.eth.Contract(POOL_ABI, poolAddress);
+
+                        // 使用 Promise.all 并行执行多个合约调用
+                        const [token0Address, token1Address, fee] = await Promise.all([
+                            poolContract.methods.token0().call(),
+                            poolContract.methods.token1().call(),
+                            poolContract.methods.fee().call()
+                        ]);
+
+                        // 创建代币合约实例
+                        const token0Contract = new web3.eth.Contract(TOKEN_ABI, token0Address);
+                        const token1Contract = new web3.eth.Contract(TOKEN_ABI, token1Address);
+
+                        // 并行获取代币符号
+                        const [baseTokenSymbol, quoteTokenSymbol] = await Promise.all([
+                            token0Contract.methods.symbol().call(),
+                            token1Contract.methods.symbol().call()
+                        ]);
+
+                        // 计算手续费百分比
+                        const feeTier = `${Number(fee) / 10000}%`;
+
+                        const newPool = {
+                            id: poolAddress,
+                            baseToken: token0Address,
+                            baseTokenSymbol,
+                            quoteToken: token1Address,
+                            quoteTokenSymbol,
+                            feeTier
+                        };
+
+                        this.pools[poolAddress] = newPool;
+                        this.filteredPools[poolAddress] = newPool;
+                    } catch (error) {
+                        console.error('获取池子信息失败:', error);
+                        alert('获取池子信息失败，请检查地址或稍后重试');
+                    }
+                },
+
                 formatFeeTier(feeTier) {
                     const feeMap = {
                         '100': '0.01%',
@@ -338,7 +532,7 @@
                 async loadSwaps(isRefresh = false, limit = 100, timestampLTE) {
                     if (isRefresh) {
                         this.swaps = [];
-			this.existingHashes.clear(); // 重置时清空哈希集合
+                        this.existingHashes.clear(); // 重置时清空哈希集合
                     }
                     if (this.loading || !this.selectedPool) return;
 
