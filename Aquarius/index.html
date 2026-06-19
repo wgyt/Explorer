@@ -215,16 +215,95 @@ body {
 }
 
 .account-chip {
-  border: 1px solid rgb(20 184 166);
-  background: rgb(204 251 241);
-  color: rgb(17 94 89);
+  font-weight: 700;
+}
+
+.account-chip-default {
+  border: 1px solid rgb(229 229 229);
+  background: rgb(250 250 250);
+  color: rgb(82 82 82);
+}
+
+.dark .account-chip-default {
+  border-color: rgb(64 64 64);
+  background: rgb(38 38 38);
+  color: rgb(212 212 212);
+}
+
+.account-chip-alias {
   font-weight: 800;
 }
 
-.dark .account-chip {
+.account-chip-teal {
+  border: 1px solid rgb(20 184 166);
+  background: rgb(204 251 241);
+  color: rgb(17 94 89);
+}
+
+.dark .account-chip-teal {
   border-color: rgb(45 212 191);
   background: rgb(19 78 74);
   color: rgb(153 246 228);
+}
+
+.account-chip-amber {
+  border: 1px solid rgb(245 158 11);
+  background: rgb(254 243 199);
+  color: rgb(146 64 14);
+}
+
+.dark .account-chip-amber {
+  border-color: rgb(251 191 36);
+  background: rgb(69 26 3);
+  color: rgb(253 230 138);
+}
+
+.account-chip-mustard {
+  border: 1px solid rgb(161 98 7);
+  background: rgb(202 138 4);
+  color: rgb(254 252 232);
+}
+
+.dark .account-chip-mustard {
+  border-color: rgb(234 179 8);
+  background: rgb(113 63 18);
+  color: rgb(254 240 138);
+}
+
+.account-chip-sky {
+  border: 1px solid rgb(14 165 233);
+  background: rgb(224 242 254);
+  color: rgb(7 89 133);
+}
+
+.dark .account-chip-sky {
+  border-color: rgb(56 189 248);
+  background: rgb(8 47 73);
+  color: rgb(186 230 253);
+}
+
+.account-chip-violet {
+  border: 1px solid rgb(139 92 246);
+  background: rgb(237 233 254);
+  color: rgb(91 33 182);
+}
+
+.dark .account-chip-violet {
+  border-color: rgb(167 139 250);
+  background: rgb(46 16 101);
+  color: rgb(221 214 254);
+}
+
+.account-chip-rose {
+  border: 1px solid rgb(244 63 94);
+  background: rgb(255 228 230);
+  color: rgb(159 18 57);
+}
+
+.dark .account-chip-rose {
+  border-color: rgb(251 113 133);
+  background: rgb(76 5 25);
+  color: rgb(255 205 210);
 }
 
 .side-chip {
@@ -631,7 +710,33 @@ function shortenStellarId(value) {
 }
 
 function getAccountDisplayName(accountAddress, aliases = {}) {
-  return aliases[accountAddress] || shortenStellarId(accountAddress);
+  return getAccountDisplayMeta(accountAddress, aliases).label;
+}
+
+function getAccountDisplayMeta(accountAddress, aliases = {}) {
+  const aliasConfig = aliases[accountAddress];
+  if (!aliasConfig) {
+    return {
+      label: shortenStellarId(accountAddress),
+      isAlias: false,
+      className: "account-chip account-chip-default"
+    };
+  }
+
+  if (typeof aliasConfig === "string") {
+    return {
+      label: aliasConfig,
+      isAlias: true,
+      className: "account-chip account-chip-alias account-chip-teal"
+    };
+  }
+
+  const color = normalizeAccountChipColor(aliasConfig.color);
+  return {
+    label: aliasConfig.label || shortenStellarId(accountAddress),
+    isAlias: true,
+    className: `account-chip account-chip-alias account-chip-${color}`
+  };
 }
 
 function buildExplorerLinks(transactionHash) {
@@ -727,6 +832,11 @@ function scaleAquaUsd(rawAmount) {
   return Number.isFinite(amount) ? amount / AQUA_USD_SCALE : 0;
 }
 
+function normalizeAccountChipColor(color) {
+  const value = String(color ?? "").trim().toLowerCase();
+  return ["teal", "amber", "sky", "violet", "rose", "mustard"].includes(value) ? value : "teal";
+}
+
 function trimFixed(value) {
   return Number(value).toFixed(2).replace(/\.?0+$/, "");
 }
@@ -746,9 +856,9 @@ function pad(value) {
 
 const PAGE_SIZE = 10;
 const ACCOUNT_ALIASES = {
-  GACDE4YE7HIVANFO3474JH6JISF6S3WZRC2IXG3RHGRIYWZ5DDVTTQLC: "吃屎哥",
-  GDZRMFHF3ATLWEDCXY4OFGXSWZOCIOEEP2PVSDW4LRDAII2G4FRUAWR4: "Hong哥",
-  GBZYACCF4UFUC3SJIE7BE4E7OMCDNSUCHNQIPUNUXDOD3IEO7NDKKKOU: "最靓的仔"
+  GACDE4YE7HIVANFO3474JH6JISF6S3WZRC2IXG3RHGRIYWZ5DDVTTQLC: { label: "吃屎哥", color: "mustard" },
+  GDZRMFHF3ATLWEDCXY4OFGXSWZOCIOEEP2PVSDW4LRDAII2G4FRUAWR4: { label: "Hong哥", color: "sky" },
+  GBZYACCF4UFUC3SJIE7BE4E7OMCDNSUCHNQIPUNUXDOD3IEO7NDKKKOU: { label: "最靓的仔", color: "violet" }
 };
 
 const state = {
@@ -1104,7 +1214,7 @@ function renderSwapCard(swap) {
   const pool = state.poolView;
   const explorerLinks = buildExplorerLinks(swap.transactionHash);
   const sideClass = swap.direction === "buy_base" ? "side-buy" : "side-sell";
-  const accountLabel = getAccountDisplayName(swap.accountAddress, ACCOUNT_ALIASES);
+  const accountMeta = getAccountDisplayMeta(swap.accountAddress, ACCOUNT_ALIASES);
 
   return `
     <article class="swap-card">
@@ -1134,7 +1244,7 @@ function renderSwapCard(swap) {
         <div>
           <div class="data-label">发起方</div>
           <div class="mt-1">
-            <span class="mono-chip account-chip" title="${escapeAttr(swap.accountAddress)}">${escapeHtml(accountLabel)}</span>
+            <span class="mono-chip ${escapeAttr(accountMeta.className)}" title="${escapeAttr(swap.accountAddress)}">${escapeHtml(accountMeta.label)}</span>
           </div>
         </div>
 
