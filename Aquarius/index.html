@@ -214,6 +214,19 @@ body {
   color: rgb(229 229 229);
 }
 
+.account-chip {
+  border: 1px solid rgb(20 184 166);
+  background: rgb(204 251 241);
+  color: rgb(17 94 89);
+  font-weight: 800;
+}
+
+.dark .account-chip {
+  border-color: rgb(45 212 191);
+  background: rgb(19 78 74);
+  color: rgb(153 246 228);
+}
+
 .side-chip {
   display: inline-flex;
   align-items: center;
@@ -635,6 +648,10 @@ function buildExplorerLinks(transactionHash) {
   ];
 }
 
+function shouldLoadMoreAfterRender({ poolLoaded, isLoading, isLoadingMore, hasMore, sentinelVisible }) {
+  return Boolean(poolLoaded && !isLoading && !isLoadingMore && hasMore && sentinelVisible);
+}
+
 function formatAmount(value) {
   const amount = Number(value);
   if (!Number.isFinite(amount)) return "-";
@@ -729,8 +746,9 @@ function pad(value) {
 
 const PAGE_SIZE = 10;
 const ACCOUNT_ALIASES = {
-  GACDE4YE7HIVANFO3474JH6JISF6S3WZRC2IXG3RHGRIYWZ5DDVTTQLC: "TQLC",
-  GDZRMFHF3ATLWEDCXY4OFGXSWZOCIOEEP2PVSDW4LRDAII2G4FRUAWR4: "Hong哥"
+  GACDE4YE7HIVANFO3474JH6JISF6S3WZRC2IXG3RHGRIYWZ5DDVTTQLC: "吃屎哥",
+  GDZRMFHF3ATLWEDCXY4OFGXSWZOCIOEEP2PVSDW4LRDAII2G4FRUAWR4: "Hong哥",
+  GBZYACCF4UFUC3SJIE7BE4E7OMCDNSUCHNQIPUNUXDOD3IEO7NDKKKOU: "最靓的仔"
 };
 
 const state = {
@@ -742,6 +760,7 @@ const state = {
   isLoading: false,
   isLoadingMore: false,
   isRefreshing: false,
+  visibleSentinelLoadScheduled: false,
   refreshTimer: null
 };
 
@@ -1073,10 +1092,12 @@ function renderSwaps() {
 
   if (filtered.length === 0) {
     elements.swapList.innerHTML = `<div class="empty-state">当前筛选条件下没有交易。</div>`;
+    scheduleVisibleSentinelLoad();
     return;
   }
 
   elements.swapList.innerHTML = filtered.map(renderSwapCard).join("");
+  scheduleVisibleSentinelLoad();
 }
 
 function renderSwapCard(swap) {
@@ -1113,7 +1134,7 @@ function renderSwapCard(swap) {
         <div>
           <div class="data-label">发起方</div>
           <div class="mt-1">
-            <span class="mono-chip" title="${escapeAttr(swap.accountAddress)}">${escapeHtml(accountLabel)}</span>
+            <span class="mono-chip account-chip" title="${escapeAttr(swap.accountAddress)}">${escapeHtml(accountLabel)}</span>
           </div>
         </div>
 
@@ -1155,6 +1176,35 @@ function metaChip(label, value) {
 function setStatus(message, type = "info") {
   elements.statusText.textContent = message;
   elements.statusText.dataset.type = type;
+}
+
+function scheduleVisibleSentinelLoad() {
+  if (!isSmallFilterActive() || state.visibleSentinelLoadScheduled) return;
+
+  state.visibleSentinelLoadScheduled = true;
+  window.requestAnimationFrame(() => {
+    state.visibleSentinelLoadScheduled = false;
+    if (
+      shouldLoadMoreAfterRender({
+        poolLoaded: Boolean(state.poolView),
+        isLoading: state.isLoading,
+        isLoadingMore: state.isLoadingMore,
+        hasMore: state.hasMore,
+        sentinelVisible: isElementNearViewport(elements.loadMoreSentinel, 280)
+      })
+    ) {
+      loadMore();
+    }
+  });
+}
+
+function isSmallFilterActive() {
+  return Boolean(elements.smallTokenSelect.value && Number(elements.smallMinInput.value) > 0);
+}
+
+function isElementNearViewport(element, marginPx) {
+  const rect = element.getBoundingClientRect();
+  return rect.top <= window.innerHeight + marginPx && rect.bottom >= -marginPx;
 }
 
 function updatePoolUrl(poolAddress) {
