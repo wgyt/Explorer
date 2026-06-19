@@ -1,0 +1,1193 @@
+<!doctype html>
+<html lang="zh-CN" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Stellar Aquarius Swap transaction explorer" />
+    <title>Stellar Aquarius Swap Explorer</title>
+    <link rel="icon" href="https://aqua.network/favicon.png" />
+    <script>
+      window.tailwind = window.tailwind || {};
+      window.tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+              mono: ["JetBrains Mono", "ui-monospace", "SFMono-Regular", "monospace"]
+            }
+          }
+        }
+      };
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+:root {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  min-width: 320px;
+}
+
+.dark .dark\:bg-neutral-925\/90 {
+  background-color: rgb(18 18 18 / 0.9);
+}
+
+.top-panel {
+  border-radius: 8px;
+  padding: 16px;
+  backdrop-filter: blur(10px);
+}
+
+.field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-label {
+  color: rgb(82 82 82);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.dark .field-label {
+  color: rgb(163 163 163);
+}
+
+.control {
+  min-height: 40px;
+  width: 100%;
+  border: 1px solid rgb(212 212 212);
+  border-radius: 8px;
+  background: rgb(255 255 255);
+  color: rgb(23 23 23);
+  padding: 8px 10px;
+  outline: none;
+  transition: border-color 120ms ease, box-shadow 120ms ease, background 120ms ease;
+}
+
+.dark .control {
+  border-color: rgb(64 64 64);
+  background: rgb(23 23 23);
+  color: rgb(245 245 245);
+}
+
+.control:focus {
+  border-color: rgb(20 184 166);
+  box-shadow: 0 0 0 3px rgb(20 184 166 / 0.18);
+}
+
+.primary-button,
+.secondary-button,
+.icon-button,
+.link-button {
+  min-height: 40px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease, transform 120ms ease;
+}
+
+.primary-button {
+  background: rgb(20 184 166);
+  color: rgb(4 47 46);
+  padding: 0 14px;
+}
+
+.primary-button:hover {
+  background: rgb(45 212 191);
+}
+
+.secondary-button,
+.icon-button {
+  border: 1px solid rgb(212 212 212);
+  background: rgb(255 255 255);
+  color: rgb(38 38 38);
+  padding: 0 12px;
+}
+
+.dark .secondary-button,
+.dark .icon-button {
+  border-color: rgb(64 64 64);
+  background: rgb(23 23 23);
+  color: rgb(245 245 245);
+}
+
+.secondary-button:hover,
+.icon-button:hover {
+  border-color: rgb(20 184 166);
+  color: rgb(13 148 136);
+}
+
+.status-pill {
+  border: 1px solid rgb(252 211 77);
+  border-radius: 999px;
+  color: rgb(146 64 14);
+  background: rgb(254 243 199);
+  padding: 4px 9px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.dark .status-pill {
+  border-color: rgb(180 83 9);
+  color: rgb(253 230 138);
+  background: rgb(69 26 3 / 0.72);
+}
+
+.status-text {
+  max-width: min(58vw, 420px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgb(82 82 82);
+  font-size: 13px;
+}
+
+.dark .status-text {
+  color: rgb(163 163 163);
+}
+
+.swap-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.swap-card {
+  border: 1px solid rgb(229 229 229);
+  border-radius: 8px;
+  background: rgb(255 255 255);
+  padding: 14px;
+}
+
+.dark .swap-card {
+  border-color: rgb(38 38 38);
+  background: rgb(18 18 18);
+}
+
+.swap-card-grid {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.8fr) minmax(170px, 1.1fr) minmax(160px, 1.1fr) minmax(180px, 1.2fr) minmax(140px, 0.9fr) minmax(160px, 1fr);
+  gap: 14px;
+  align-items: center;
+}
+
+.data-label {
+  color: rgb(115 115 115);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.dark .data-label {
+  color: rgb(163 163 163);
+}
+
+.mono-chip {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-radius: 6px;
+  background: rgb(245 245 245);
+  color: rgb(38 38 38);
+  padding: 5px 7px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+}
+
+.dark .mono-chip {
+  background: rgb(38 38 38);
+  color: rgb(229 229 229);
+}
+
+.side-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.side-buy {
+  background: rgb(204 251 241);
+  color: rgb(17 94 89);
+}
+
+.dark .side-buy {
+  background: rgb(19 78 74);
+  color: rgb(153 246 228);
+}
+
+.side-sell {
+  background: rgb(254 243 199);
+  color: rgb(146 64 14);
+}
+
+.dark .side-sell {
+  background: rgb(69 26 3);
+  color: rgb(253 230 138);
+}
+
+.link-button {
+  display: inline-flex;
+  min-height: 30px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgb(212 212 212);
+  background: rgb(250 250 250);
+  color: rgb(23 23 23);
+  padding: 0 8px;
+  text-decoration: none;
+}
+
+.dark .link-button {
+  border-color: rgb(64 64 64);
+  background: rgb(23 23 23);
+  color: rgb(245 245 245);
+}
+
+.link-button:hover {
+  border-color: rgb(20 184 166);
+  color: rgb(13 148 136);
+}
+
+.empty-state {
+  border: 1px dashed rgb(212 212 212);
+  border-radius: 8px;
+  padding: 28px;
+  text-align: center;
+  color: rgb(82 82 82);
+}
+
+.dark .empty-state {
+  border-color: rgb(64 64 64);
+  color: rgb(163 163 163);
+}
+
+.back-to-top {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  display: none;
+  min-height: 40px;
+  border-radius: 999px;
+  background: rgb(20 184 166);
+  color: rgb(4 47 46);
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: 0 12px 24px rgb(0 0 0 / 0.18);
+}
+
+.back-to-top.is-visible {
+  display: inline-flex;
+  align-items: center;
+}
+
+@media (max-width: 980px) {
+  .swap-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .top-panel {
+    padding: 12px;
+  }
+
+  .swap-card-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .primary-button,
+  .secondary-button,
+  .icon-button {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+}
+
+    </style>
+  </head>
+  <body class="min-h-screen bg-neutral-50 text-neutral-950 antialiased dark:bg-neutral-950 dark:text-neutral-100">
+    <main class="mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 py-4 sm:px-5 lg:px-6">
+      <section class="top-panel border border-neutral-200 bg-white/90 shadow-sm dark:border-neutral-800 dark:bg-neutral-925/90">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+              <img src="https://aqua.network/favicon.png" alt="" class="h-7 w-7" />
+              <h1 id="poolTitle" class="truncate text-xl font-semibold tracking-normal sm:text-2xl">Aquarius Swap</h1>
+              <span class="status-pill">Swap</span>
+            </div>
+            <div id="poolMeta" class="mt-2 flex flex-wrap gap-2 text-sm text-neutral-600 dark:text-neutral-400"></div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="statusText" class="status-text">准备加载</span>
+            <button id="themeToggle" type="button" class="icon-button" title="切换明暗模式" aria-label="切换明暗模式">
+              <span id="themeIcon" aria-hidden="true">Dark</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <label class="field">
+            <span class="field-label">热门 TOP40 池子</span>
+            <select id="topPoolSelect" class="control">
+              <option value="">加载热门池子...</option>
+            </select>
+          </label>
+
+          <label class="field md:col-span-2 xl:col-span-2">
+            <span class="field-label">池子地址</span>
+            <div class="flex gap-2">
+              <input id="poolInput" class="control font-mono text-xs" autocomplete="off" spellcheck="false" />
+              <button id="loadPoolButton" type="button" class="primary-button">加载</button>
+            </div>
+          </label>
+
+          <label class="field">
+            <span class="field-label">自动刷新</span>
+            <div class="grid grid-cols-[1fr_88px] gap-2">
+              <select id="refreshSelect" class="control">
+                <option value="5">5s</option>
+                <option value="10" selected>10s</option>
+                <option value="15">15s</option>
+                <option value="30">30s</option>
+              </select>
+              <input id="refreshCustom" class="control" type="number" min="1" step="1" placeholder="秒" />
+            </div>
+          </label>
+        </div>
+
+        <div class="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+          <label class="field">
+            <span class="field-label">开始时间 (北京时间)</span>
+            <input id="startTime" class="control" type="datetime-local" step="1" />
+          </label>
+
+          <label class="field">
+            <span class="field-label">结束时间 (北京时间)</span>
+            <input id="endTime" class="control" type="datetime-local" step="1" />
+          </label>
+
+          <label class="field xl:col-span-2">
+            <span class="field-label">指定账户</span>
+            <input id="accountInput" class="control font-mono text-xs" autocomplete="off" spellcheck="false" placeholder="G..." />
+          </label>
+
+          <div class="field">
+            <span class="field-label">小额过滤</span>
+            <div class="grid grid-cols-[1fr_112px] gap-2">
+              <select id="smallTokenSelect" class="control">
+                <option value="">选择币种</option>
+              </select>
+              <input id="smallMinInput" class="control" type="number" min="0" step="0.0000001" placeholder="最小值" />
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <div id="topPoolHint" class="text-sm text-neutral-500 dark:text-neutral-400">热门池子异步加载，不影响当前池子。</div>
+          <div class="flex gap-2">
+            <button id="clearFiltersButton" type="button" class="secondary-button">清空筛选</button>
+            <button id="applyFiltersButton" type="button" class="primary-button">应用筛选</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="flex flex-col gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="text-base font-semibold">交易列表</h2>
+            <p id="listSummary" class="mt-1 text-sm text-neutral-500 dark:text-neutral-400">每页 10 条，按区块高度逆序。</p>
+          </div>
+          <div id="refreshInfo" class="text-sm text-neutral-500 dark:text-neutral-400"></div>
+        </div>
+
+        <div id="swapList" class="swap-list" aria-live="polite"></div>
+        <div id="loadMoreSentinel" class="h-8"></div>
+      </section>
+    </main>
+
+    <button id="backToTop" type="button" class="back-to-top" aria-label="回到顶部" title="回到顶部">Top</button>
+
+    <script type="module">
+const AQUARIUS_API_BASE = "https://amm-api.aqua.network";
+const DEFAULT_POOL_ADDRESS = "CD2O2B6PWKXDVFXMHXHQMF25C4TWOSQAENA7DNFR5G27F5CHJ7AJP5F6";
+const STROOP_SCALE = 10_000_000;
+const AQUA_USD_SCALE = 10_000_000;
+
+const TOKEN_DECIMALS_BY_ADDRESS = {
+  CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA: 7,
+  CBIJBDNZNF4X35BJ4FFZWCDBSCKOP5NB4PLG4SNENRMLAPYG4P5FM6VN: 8
+};
+
+function normalizeTokenLabel(tokenValue) {
+  const value = String(tokenValue ?? "").trim();
+  if (!value) return "Unknown";
+  if (value.toLowerCase() === "native") return "XLM";
+  const label = value.split(":")[0] || value;
+  if (/^solv\s*btc$/i.test(label)) return "SolvBTC";
+  return label;
+}
+
+function parseBeijingInputToUtcParam(inputValue) {
+  const parts = parseDateTimeInput(inputValue);
+  if (!parts) return "";
+
+  const utcDate = new Date(Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour - 8, parts.minute, parts.second));
+  return formatUtcDateTime(utcDate);
+}
+
+function buildEventsUrl({ poolAddress, page = 1, size = 10, account = "", start = "", end = "" }) {
+  if (!poolAddress) {
+    throw new Error("poolAddress is required");
+  }
+
+  const url = new URL(`/events/pool/${poolAddress}/`, AQUARIUS_API_BASE);
+  url.searchParams.set("size", String(size));
+  url.searchParams.set("page", String(page));
+  url.searchParams.set("event_type__in", "swap");
+
+  const trimmedAccount = account.trim();
+  if (trimmedAccount) {
+    url.searchParams.set("address", trimmedAccount);
+  }
+
+  const startUtc = parseBeijingInputToUtcParam(start);
+  if (startUtc) {
+    url.searchParams.set("ledger_close_at__gte", startUtc);
+  }
+
+  const endUtc = parseBeijingInputToUtcParam(end);
+  if (endUtc) {
+    url.searchParams.set("ledger_close_at__lte", endUtc);
+  }
+
+  return url.toString();
+}
+
+function buildPoolInfoUrl(poolAddress) {
+  if (!poolAddress) {
+    throw new Error("poolAddress is required");
+  }
+  return new URL(`/pools/${poolAddress}/`, AQUARIUS_API_BASE).toString();
+}
+
+function buildTopPoolsUrl() {
+  const url = new URL("/pools/", AQUARIUS_API_BASE);
+  url.searchParams.set("pool_type", "");
+  url.searchParams.set("sort", "-volume");
+  url.searchParams.set("page", "1");
+  url.searchParams.set("size", "40");
+  url.searchParams.set("search", "");
+  return url.toString();
+}
+
+function createPoolView(poolInfo) {
+  const addresses = poolInfo?.tokens_addresses;
+  const rawLabels = poolInfo?.tokens_str;
+  if (!Array.isArray(addresses) || addresses.length < 2 || !Array.isArray(rawLabels) || rawLabels.length < 2) {
+    throw new Error("Pool info does not contain two token addresses and labels");
+  }
+
+  const tokens = addresses.slice(0, 2).map((address, index) => ({
+    address,
+    rawLabel: rawLabels[index],
+    label: normalizeTokenLabel(rawLabels[index]),
+    decimals: getTokenDecimals(address)
+  }));
+
+  return {
+    address: poolInfo.address,
+    name: `${tokens[0].label}/${tokens[1].label}`,
+    base: tokens[0],
+    quote: tokens[1],
+    tokens,
+    volumeUsd: scaleAquaUsd(poolInfo.volume_usd),
+    liquidityUsd: scaleAquaUsd(poolInfo.liquidity_usd),
+    fee: poolInfo.fee ?? "",
+    poolType: poolInfo.pool_type ?? ""
+  };
+}
+
+function parseSwapEvent(event, poolView) {
+  const amountByToken = new Map();
+  event.tokens.forEach((tokenAddress, index) => {
+    amountByToken.set(tokenAddress, Number(event.amounts[index]));
+  });
+
+  const baseRaw = amountByToken.get(poolView.base.address);
+  const quoteRaw = amountByToken.get(poolView.quote.address);
+  if (!Number.isFinite(baseRaw) || !Number.isFinite(quoteRaw)) {
+    throw new Error("Swap event does not contain both pool token amounts");
+  }
+
+  const baseAmount = scaleTokenAmount(Math.abs(baseRaw), poolView.base);
+  const quoteAmount = scaleTokenAmount(Math.abs(quoteRaw), poolView.quote);
+  const direction = baseRaw < 0 ? "buy_base" : "sell_base";
+  const input =
+    direction === "buy_base"
+      ? { token: poolView.quote, amount: quoteAmount, rawAmount: Math.abs(quoteRaw) }
+      : { token: poolView.base, amount: baseAmount, rawAmount: Math.abs(baseRaw) };
+  const output =
+    direction === "buy_base"
+      ? { token: poolView.base, amount: baseAmount, rawAmount: Math.abs(baseRaw) }
+      : { token: poolView.quote, amount: quoteAmount, rawAmount: Math.abs(quoteRaw) };
+
+  return {
+    ledger: Number(event.ledger),
+    ledgerCloseAtUtc: event.ledger_close_at_str,
+    beijingTime: formatApiUtcToBeijing(event.ledger_close_at_str),
+    tokens: poolView.tokens,
+    tokenAmounts: [
+      { token: poolView.base, signedAmount: scaleTokenAmount(baseRaw, poolView.base), amount: baseAmount, rawAmount: Math.abs(baseRaw) },
+      { token: poolView.quote, signedAmount: scaleTokenAmount(quoteRaw, poolView.quote), amount: quoteAmount, rawAmount: Math.abs(quoteRaw) }
+    ],
+    direction,
+    directionLabel: direction === "buy_base" ? `Buy ${poolView.base.label}` : `Sell ${poolView.base.label}`,
+    input,
+    output,
+    price: baseAmount === 0 ? 0 : quoteAmount / baseAmount,
+    transactionHash: event.transaction_hash,
+    accountAddress: event.account_address,
+    raw: event
+  };
+}
+
+function sortSwapEvents(swaps) {
+  return [...swaps].sort((left, right) => {
+    if (right.ledger !== left.ledger) {
+      return right.ledger - left.ledger;
+    }
+
+    if (left.direction !== right.direction) {
+      return left.direction === "buy_base" ? -1 : 1;
+    }
+
+    if (left.direction === "buy_base") {
+      return right.price - left.price || left.transactionHash.localeCompare(right.transactionHash);
+    }
+
+    return left.price - right.price || left.transactionHash.localeCompare(right.transactionHash);
+  });
+}
+
+function filterSmallSwaps(swaps, { tokenAddress = "", minimum = "" } = {}) {
+  const parsedMinimum = Number(minimum);
+  if (!tokenAddress || !Number.isFinite(parsedMinimum) || parsedMinimum <= 0) {
+    return [...swaps];
+  }
+
+  return swaps.filter((swap) => {
+    const tokenAmount = swap.tokenAmounts.find((item) => item.token.address === tokenAddress);
+    return tokenAmount ? tokenAmount.amount >= parsedMinimum : false;
+  });
+}
+
+function mergeFreshEvents(current, fresh) {
+  const seen = new Set(current.map((swap) => swap.transactionHash));
+  const unseenFresh = fresh.filter((swap) => {
+    if (seen.has(swap.transactionHash)) return false;
+    seen.add(swap.transactionHash);
+    return true;
+  });
+  return [...unseenFresh, ...current];
+}
+
+function shortenStellarId(value) {
+  const text = String(value ?? "");
+  if (text.length <= 12) return text;
+  return `${text.slice(0, 4)}...${text.slice(-4)}`;
+}
+
+function getAccountDisplayName(accountAddress, aliases = {}) {
+  return aliases[accountAddress] || shortenStellarId(accountAddress);
+}
+
+function buildExplorerLinks(transactionHash) {
+  const hash = String(transactionHash ?? "").trim();
+  return [
+    {
+      name: "StellarExpert",
+      href: `https://stellar.expert/explorer/public/tx/${hash}`
+    },
+    {
+      name: "StellarChain",
+      href: `https://stellarchain.io/tx/${hash}`
+    }
+  ];
+}
+
+function formatAmount(value) {
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return "-";
+  if (amount === 0) return "0";
+  if (amount >= 1000) {
+    return amount.toLocaleString("en-US", { maximumFractionDigits: 2 });
+  }
+  if (amount >= 1) {
+    return amount.toLocaleString("en-US", { maximumFractionDigits: 6 });
+  }
+  return amount.toLocaleString("en-US", { maximumFractionDigits: 10 });
+}
+
+function formatPrice(value) {
+  const price = Number(value);
+  if (!Number.isFinite(price) || price === 0) return "-";
+  if (price >= 1) {
+    return price.toLocaleString("en-US", { maximumFractionDigits: 8 });
+  }
+  return price.toLocaleString("en-US", { maximumSignificantDigits: 8 });
+}
+
+function formatUsd(value) {
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return "-";
+  const abs = Math.abs(amount);
+  if (abs >= 1_000_000_000) return `${trimFixed(amount / 1_000_000_000)}B`;
+  if (abs >= 1_000_000) return `${trimFixed(amount / 1_000_000)}M`;
+  if (abs >= 1_000) return `${trimFixed(amount / 1_000)}K`;
+  return amount.toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
+  });
+}
+
+function formatApiUtcToBeijing(apiUtcValue) {
+  const parts = parseDateTimeInput(apiUtcValue);
+  if (!parts) return "";
+
+  const date = new Date(Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour + 8, parts.minute, parts.second));
+  return formatUtcDateTime(date);
+}
+
+function parseDateTimeInput(inputValue) {
+  const input = String(inputValue ?? "").trim();
+  if (!input) return null;
+
+  const match = input.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+  if (!match) return null;
+
+  return {
+    year: Number(match[1]),
+    month: Number(match[2]),
+    day: Number(match[3]),
+    hour: Number(match[4] ?? 0),
+    minute: Number(match[5] ?? 0),
+    second: Number(match[6] ?? 0)
+  };
+}
+
+function getTokenDecimals(address) {
+  return TOKEN_DECIMALS_BY_ADDRESS[address] ?? 7;
+}
+
+function scaleTokenAmount(rawAmount, token) {
+  return Number(rawAmount) / 10 ** Number(token.decimals ?? 7);
+}
+
+function scaleAquaUsd(rawAmount) {
+  const amount = Number(rawAmount);
+  return Number.isFinite(amount) ? amount / AQUA_USD_SCALE : 0;
+}
+
+function trimFixed(value) {
+  return Number(value).toFixed(2).replace(/\.?0+$/, "");
+}
+
+function formatUtcDateTime(date) {
+  return [
+    date.getUTCFullYear(),
+    pad(date.getUTCMonth() + 1),
+    pad(date.getUTCDate())
+  ].join("-") + ` ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}`;
+}
+
+function pad(value) {
+  return String(value).padStart(2, "0");
+}
+
+
+const PAGE_SIZE = 10;
+const ACCOUNT_ALIASES = {
+  GCLTOD3HSX2RMGUOVEYRRLYJQDIIGWAQSPZPX6MINKVVHOKZOYNPY5KI: "Alias 1",
+  GAQLL6PZWFPJ75BEJ4EZDLMFGI4TIFNBELZQPHXSIL2UX3JN5SO74EOS: "Alias 2"
+};
+
+const state = {
+  poolView: null,
+  allSwaps: [],
+  page: 1,
+  pages: 1,
+  hasMore: false,
+  isLoading: false,
+  isLoadingMore: false,
+  isRefreshing: false,
+  refreshTimer: null
+};
+
+const elements = {
+  poolTitle: document.querySelector("#poolTitle"),
+  poolMeta: document.querySelector("#poolMeta"),
+  statusText: document.querySelector("#statusText"),
+  themeToggle: document.querySelector("#themeToggle"),
+  themeIcon: document.querySelector("#themeIcon"),
+  topPoolSelect: document.querySelector("#topPoolSelect"),
+  poolInput: document.querySelector("#poolInput"),
+  loadPoolButton: document.querySelector("#loadPoolButton"),
+  refreshSelect: document.querySelector("#refreshSelect"),
+  refreshCustom: document.querySelector("#refreshCustom"),
+  startTime: document.querySelector("#startTime"),
+  endTime: document.querySelector("#endTime"),
+  accountInput: document.querySelector("#accountInput"),
+  smallTokenSelect: document.querySelector("#smallTokenSelect"),
+  smallMinInput: document.querySelector("#smallMinInput"),
+  topPoolHint: document.querySelector("#topPoolHint"),
+  clearFiltersButton: document.querySelector("#clearFiltersButton"),
+  applyFiltersButton: document.querySelector("#applyFiltersButton"),
+  listSummary: document.querySelector("#listSummary"),
+  refreshInfo: document.querySelector("#refreshInfo"),
+  swapList: document.querySelector("#swapList"),
+  loadMoreSentinel: document.querySelector("#loadMoreSentinel"),
+  backToTop: document.querySelector("#backToTop")
+};
+
+init();
+
+function init() {
+  applyStoredTheme();
+  bindEvents();
+  initInfiniteScroll();
+
+  const initialPool = new URLSearchParams(window.location.search).get("pool") || DEFAULT_POOL_ADDRESS;
+  elements.poolInput.value = initialPool;
+  loadTopPools();
+  loadPool(initialPool);
+  scheduleAutoRefresh();
+}
+
+function bindEvents() {
+  elements.themeToggle.addEventListener("click", () => {
+    setTheme(document.documentElement.classList.contains("dark") ? "light" : "dark");
+  });
+
+  elements.loadPoolButton.addEventListener("click", () => {
+    loadPool(elements.poolInput.value);
+  });
+
+  elements.poolInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      loadPool(elements.poolInput.value);
+    }
+  });
+
+  elements.topPoolSelect.addEventListener("change", () => {
+    if (!elements.topPoolSelect.value) return;
+    elements.poolInput.value = elements.topPoolSelect.value;
+    loadPool(elements.topPoolSelect.value);
+  });
+
+  elements.applyFiltersButton.addEventListener("click", () => {
+    if (!state.poolView) return;
+    loadFirstPage();
+  });
+
+  elements.clearFiltersButton.addEventListener("click", () => {
+    elements.startTime.value = "";
+    elements.endTime.value = "";
+    elements.accountInput.value = "";
+    elements.smallMinInput.value = "";
+    renderSwaps();
+    if (state.poolView) {
+      loadFirstPage();
+    }
+  });
+
+  elements.smallTokenSelect.addEventListener("change", renderSwaps);
+  elements.smallMinInput.addEventListener("input", renderSwaps);
+  elements.refreshSelect.addEventListener("change", scheduleAutoRefresh);
+  elements.refreshCustom.addEventListener("input", scheduleAutoRefresh);
+
+  elements.backToTop.addEventListener("click", () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+
+  window.addEventListener("scroll", () => {
+    elements.backToTop.classList.toggle("is-visible", window.scrollY > 420);
+  });
+}
+
+function initInfiniteScroll() {
+  const observer = new IntersectionObserver((entries) => {
+    if (entries.some((entry) => entry.isIntersecting)) {
+      loadMore();
+    }
+  }, { rootMargin: "280px" });
+  observer.observe(elements.loadMoreSentinel);
+}
+
+async function loadTopPools() {
+  try {
+    const data = await fetchJson(buildTopPoolsUrl());
+    const pools = (data.items || []).map((pool) => {
+      try {
+        const view = createPoolView(pool);
+        return {
+          address: view.address,
+          label: `${view.name} · ${formatUsd(view.volumeUsd)} 24H`
+        };
+      } catch {
+        return null;
+      }
+    }).filter(Boolean);
+
+    elements.topPoolSelect.innerHTML = [
+      `<option value="">热门 TOP40 池子</option>`,
+      ...pools.map((pool) => `<option value="${escapeAttr(pool.address)}">${escapeHtml(pool.label)}</option>`)
+    ].join("");
+    elements.topPoolHint.textContent = `已加载 ${pools.length} 个热门池子；native 已显示为 XLM。`;
+  } catch (error) {
+    elements.topPoolSelect.innerHTML = `<option value="">热门池子加载失败</option>`;
+    elements.topPoolHint.textContent = `热门池子加载失败：${error.message}。当前池子仍会继续加载。`;
+  }
+}
+
+async function loadPool(poolAddress) {
+  const targetPool = String(poolAddress || "").trim();
+  if (!targetPool) {
+    setStatus("请输入池子地址", "error");
+    return;
+  }
+
+  state.isLoading = true;
+  state.poolView = null;
+  state.allSwaps = [];
+  renderLoading("正在加载池子信息...");
+  setStatus("正在加载池子信息...");
+  updatePoolUrl(targetPool);
+
+  try {
+    const poolInfo = await fetchJson(buildPoolInfoUrl(targetPool));
+    state.poolView = createPoolView(poolInfo);
+    state.page = 1;
+    state.pages = 1;
+    state.hasMore = false;
+    elements.poolInput.value = targetPool;
+    updatePoolHeader();
+    updateSmallFilterOptions();
+    await loadFirstPage();
+    setStatus(`已加载 ${state.poolView.name}`);
+  } catch (error) {
+    state.poolView = null;
+    state.allSwaps = [];
+    updatePoolHeader();
+    renderError(`加载池子失败：${error.message}`);
+    setStatus(`加载失败：${error.message}`, "error");
+  } finally {
+    state.isLoading = false;
+  }
+}
+
+async function loadFirstPage() {
+  if (!state.poolView) return;
+
+  state.isLoading = true;
+  renderLoading("正在加载第一页交易...");
+  setStatus("正在加载交易...");
+
+  try {
+    const data = await fetchEventsPage(1);
+    state.allSwaps = data.swaps;
+    state.page = 1;
+    state.pages = data.pages;
+    state.hasMore = data.hasMore;
+    renderSwaps();
+    setStatus(`已加载第 1 页，共 ${data.total.toLocaleString("en-US")} 条`);
+  } catch (error) {
+    state.allSwaps = [];
+    renderError(`加载交易失败：${error.message}`);
+    setStatus(`交易加载失败：${error.message}`, "error");
+  } finally {
+    state.isLoading = false;
+  }
+}
+
+async function loadMore() {
+  if (!state.poolView || state.isLoading || state.isLoadingMore || !state.hasMore) return;
+
+  state.isLoadingMore = true;
+  setStatus(`正在加载第 ${state.page + 1} 页...`);
+
+  try {
+    const data = await fetchEventsPage(state.page + 1);
+    state.allSwaps = sortSwapEvents([...state.allSwaps, ...data.swaps]);
+    state.page = data.page;
+    state.pages = data.pages;
+    state.hasMore = data.hasMore;
+    renderSwaps();
+    setStatus(`已加载到第 ${state.page} 页`);
+  } catch (error) {
+    setStatus(`加载更多失败：${error.message}`, "error");
+  } finally {
+    state.isLoadingMore = false;
+  }
+}
+
+async function refreshFirstPage() {
+  if (!state.poolView || state.isLoading || state.isLoadingMore || state.isRefreshing) return;
+
+  state.isRefreshing = true;
+  try {
+    const data = await fetchEventsPage(1);
+    const beforeCount = state.allSwaps.length;
+    state.allSwaps = sortSwapEvents(mergeFreshEvents(state.allSwaps, data.swaps));
+    state.pages = data.pages;
+    state.hasMore = state.page < state.pages;
+    renderSwaps();
+
+    const insertedCount = state.allSwaps.length - beforeCount;
+    const timeText = new Date().toLocaleTimeString("zh-CN", { hour12: false });
+    elements.refreshInfo.textContent = insertedCount > 0 ? `${timeText} 新增 ${insertedCount} 条` : `${timeText} 无新增`;
+  } catch (error) {
+    elements.refreshInfo.textContent = `自动刷新失败：${error.message}`;
+  } finally {
+    state.isRefreshing = false;
+  }
+}
+
+async function fetchEventsPage(page) {
+  const url = buildEventsUrl({
+    poolAddress: state.poolView.address,
+    page,
+    size: PAGE_SIZE,
+    account: elements.accountInput.value,
+    start: elements.startTime.value,
+    end: elements.endTime.value
+  });
+  const data = await fetchJson(url);
+  const swaps = sortSwapEvents((data.items || []).map((event) => parseSwapEvent(event, state.poolView)));
+
+  return {
+    swaps,
+    page: Number(data.page || page),
+    pages: Number(data.pages || 1),
+    total: Number(data.total || 0),
+    hasMore: Boolean(data.next) || Number(data.page || page) < Number(data.pages || 1)
+  };
+}
+
+async function fetchJson(url) {
+  const response = await fetch(url, {
+    headers: {
+      accept: "application/json, text/plain, */*"
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+
+  return response.json();
+}
+
+function scheduleAutoRefresh() {
+  window.clearInterval(state.refreshTimer);
+  const seconds = getRefreshSeconds();
+  elements.refreshInfo.textContent = `自动刷新 ${seconds}s`;
+  state.refreshTimer = window.setInterval(refreshFirstPage, seconds * 1000);
+}
+
+function getRefreshSeconds() {
+  const custom = Number(elements.refreshCustom.value);
+  if (Number.isFinite(custom) && custom > 0) {
+    return custom;
+  }
+  return Number(elements.refreshSelect.value || 10);
+}
+
+function updatePoolHeader() {
+  if (!state.poolView) {
+    elements.poolTitle.textContent = "Aquarius Swap";
+    elements.poolMeta.innerHTML = "";
+    elements.listSummary.textContent = "每页 10 条，按区块高度逆序。";
+    return;
+  }
+
+  const pool = state.poolView;
+  elements.poolTitle.textContent = pool.name;
+  elements.poolMeta.innerHTML = [
+    metaChip("池子", shortenStellarId(pool.address)),
+    metaChip("24H交易量", formatUsd(pool.volumeUsd)),
+    metaChip("流动性", formatUsd(pool.liquidityUsd)),
+    metaChip("费率", pool.fee ? `${Number(pool.fee) * 100}%` : "-")
+  ].join("");
+}
+
+function updateSmallFilterOptions() {
+  const pool = state.poolView;
+  if (!pool) {
+    elements.smallTokenSelect.innerHTML = `<option value="">选择币种</option>`;
+    return;
+  }
+
+  elements.smallTokenSelect.innerHTML = [
+    `<option value="">不过滤</option>`,
+    ...pool.tokens.map((token) => `<option value="${escapeAttr(token.address)}">${escapeHtml(token.label)}</option>`)
+  ].join("");
+}
+
+function renderSwaps() {
+  const filtered = filterSmallSwaps(state.allSwaps, {
+    tokenAddress: elements.smallTokenSelect.value,
+    minimum: elements.smallMinInput.value
+  });
+
+  if (!state.poolView) {
+    elements.swapList.innerHTML = `<div class="empty-state">请输入或选择池子后加载交易。</div>`;
+    elements.listSummary.textContent = "每页 10 条，按区块高度逆序。";
+    return;
+  }
+
+  elements.listSummary.textContent =
+    `已显示 ${filtered.length.toLocaleString("en-US")} 条，本地缓存 ${state.allSwaps.length.toLocaleString("en-US")} 条，` +
+    `第 ${state.page}/${state.pages || 1} 页。`;
+
+  if (filtered.length === 0) {
+    elements.swapList.innerHTML = `<div class="empty-state">当前筛选条件下没有交易。</div>`;
+    return;
+  }
+
+  elements.swapList.innerHTML = filtered.map(renderSwapCard).join("");
+}
+
+function renderSwapCard(swap) {
+  const pool = state.poolView;
+  const explorerLinks = buildExplorerLinks(swap.transactionHash);
+  const sideClass = swap.direction === "buy_base" ? "side-buy" : "side-sell";
+  const accountLabel = getAccountDisplayName(swap.accountAddress, ACCOUNT_ALIASES);
+
+  return `
+    <article class="swap-card">
+      <div class="swap-card-grid">
+        <div>
+          <div class="data-label">区块</div>
+          <div class="mt-1 text-lg font-semibold">#${escapeHtml(String(swap.ledger))}</div>
+          <div class="mt-1 text-xs text-neutral-500 dark:text-neutral-400">北京时间</div>
+          <div class="text-sm">${escapeHtml(swap.beijingTime)}</div>
+        </div>
+
+        <div>
+          <div class="data-label">方向 / 价格</div>
+          <div class="mt-1 flex flex-wrap items-center gap-2">
+            <span class="side-chip ${sideClass}">${escapeHtml(swap.directionLabel)}</span>
+            <span class="text-sm text-neutral-600 dark:text-neutral-300">${escapeHtml(formatPrice(swap.price))} ${escapeHtml(pool.quote.label)}/${escapeHtml(pool.base.label)}</span>
+          </div>
+        </div>
+
+        <div>
+          <div class="data-label">输入</div>
+          <div class="mt-1 font-semibold">${escapeHtml(formatAmount(swap.input.amount))} ${escapeHtml(swap.input.token.label)}</div>
+          <div class="mt-2 data-label">输出</div>
+          <div class="mt-1 font-semibold">${escapeHtml(formatAmount(swap.output.amount))} ${escapeHtml(swap.output.token.label)}</div>
+        </div>
+
+        <div>
+          <div class="data-label">发起方</div>
+          <div class="mt-1">
+            <span class="mono-chip" title="${escapeAttr(swap.accountAddress)}">${escapeHtml(accountLabel)}</span>
+          </div>
+        </div>
+
+        <div>
+          <div class="data-label">交易 Hash</div>
+          <div class="mt-1">
+            <span class="mono-chip" title="${escapeAttr(swap.transactionHash)}">${escapeHtml(shortenStellarId(swap.transactionHash))}</span>
+          </div>
+        </div>
+
+        <div>
+          <div class="data-label">浏览器</div>
+          <div class="mt-1 flex flex-wrap gap-2">
+            ${explorerLinks.map((link) => `
+              <a class="link-button" href="${escapeAttr(link.href)}" target="_blank" rel="noopener noreferrer" title="${escapeAttr(link.name)}" aria-label="${escapeAttr(link.name)}">
+                ${link.name === "StellarExpert" ? "SE" : "SC"}
+              </a>
+            `).join("")}
+          </div>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function renderLoading(message) {
+  elements.swapList.innerHTML = `<div class="empty-state">${escapeHtml(message)}</div>`;
+}
+
+function renderError(message) {
+  elements.swapList.innerHTML = `<div class="empty-state">${escapeHtml(message)}</div>`;
+  elements.listSummary.textContent = "加载失败。";
+}
+
+function metaChip(label, value) {
+  return `<span class="rounded-full border border-neutral-200 px-2.5 py-1 text-xs dark:border-neutral-800">${escapeHtml(label)}: ${escapeHtml(value)}</span>`;
+}
+
+function setStatus(message, type = "info") {
+  elements.statusText.textContent = message;
+  elements.statusText.dataset.type = type;
+}
+
+function updatePoolUrl(poolAddress) {
+  const url = new URL(window.location.href);
+  url.searchParams.set("pool", poolAddress);
+  window.history.replaceState({}, "", url);
+}
+
+function applyStoredTheme() {
+  const stored = window.localStorage.getItem("aquarius-explorer-theme");
+  setTheme(stored === "light" ? "light" : "dark");
+}
+
+function setTheme(theme) {
+  const isDark = theme === "dark";
+  document.documentElement.classList.toggle("dark", isDark);
+  window.localStorage.setItem("aquarius-explorer-theme", theme);
+  elements.themeIcon.textContent = isDark ? "Dark" : "Light";
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function escapeAttr(value) {
+  return escapeHtml(value).replaceAll("`", "&#096;");
+}
+
+    </script>
+  </body>
+</html>
