@@ -524,6 +524,12 @@ const AQUARIUS_API_BASE = "https://amm-api.aqua.network";
 const DEFAULT_POOL_ADDRESS = "CD2O2B6PWKXDVFXMHXHQMF25C4TWOSQAENA7DNFR5G27F5CHJ7AJP5F6";
 const STROOP_SCALE = 10_000_000;
 const AQUA_USD_SCALE = 10_000_000;
+const POOL_SETTINGS_COOKIE_NAME = "stellar_aquarius_pool_settings";
+const DEFAULT_POOL_SETTINGS = Object.freeze({
+  refreshSeconds: 10,
+  smallTokenAddress: "",
+  smallMinimum: ""
+});
 
 const TOKEN_DECIMALS_BY_ADDRESS = {
   CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA: 7,
@@ -757,6 +763,51 @@ function shouldLoadMoreAfterRender({ poolLoaded, isLoading, isLoadingMore, hasMo
   return Boolean(poolLoaded && !isLoading && !isLoadingMore && hasMore && sentinelVisible);
 }
 
+function getPoolSettings(settingsByPool, poolAddress) {
+  return normalizePoolSettings(settingsByPool?.[poolAddress]);
+}
+
+function setPoolSettings(settingsByPool, poolAddress, settings) {
+  const targetPool = String(poolAddress ?? "").trim();
+  if (!targetPool) return { ...(settingsByPool || {}) };
+  return {
+    ...(settingsByPool || {}),
+    [targetPool]: normalizePoolSettings(settings)
+  };
+}
+
+function parsePoolSettingsCookie(cookieString) {
+  const cookieValue = String(cookieString ?? "")
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${POOL_SETTINGS_COOKIE_NAME}=`));
+
+  if (!cookieValue) return {};
+
+  try {
+    const decoded = decodeURIComponent(cookieValue.slice(POOL_SETTINGS_COOKIE_NAME.length + 1));
+    const parsed = JSON.parse(decoded);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    return Object.fromEntries(
+      Object.entries(parsed).map(([poolAddress, settings]) => [poolAddress, normalizePoolSettings(settings)])
+    );
+  } catch {
+    return {};
+  }
+}
+
+function serializePoolSettingsCookie(settingsByPool) {
+  const normalized = {};
+  for (const [poolAddress, settings] of Object.entries(settingsByPool || {})) {
+    const targetPool = String(poolAddress ?? "").trim();
+    if (targetPool) {
+      normalized[targetPool] = normalizePoolSettings(settings);
+    }
+  }
+
+  return `${POOL_SETTINGS_COOKIE_NAME}=${encodeURIComponent(JSON.stringify(normalized))}; Max-Age=31536000; Path=/; SameSite=Lax`;
+}
+
 function formatAmount(value) {
   const amount = Number(value);
   if (!Number.isFinite(amount)) return "-";
@@ -834,7 +885,26 @@ function scaleAquaUsd(rawAmount) {
 
 function normalizeAccountChipColor(color) {
   const value = String(color ?? "").trim().toLowerCase();
+  if (value === "屎黄色") return "mustard";
   return ["teal", "amber", "sky", "violet", "rose", "mustard"].includes(value) ? value : "teal";
+}
+
+function normalizePoolSettings(settings) {
+  const refreshSeconds = Number(settings?.refreshSeconds);
+  const smallMinimumValue = String(settings?.smallMinimum ?? "").trim();
+  const smallMinimumNumber = Number(smallMinimumValue);
+
+  return {
+    refreshSeconds:
+      Number.isFinite(refreshSeconds) && refreshSeconds > 0
+        ? Math.floor(refreshSeconds)
+        : DEFAULT_POOL_SETTINGS.refreshSeconds,
+    smallTokenAddress: String(settings?.smallTokenAddress ?? "").trim(),
+    smallMinimum:
+      smallMinimumValue && Number.isFinite(smallMinimumNumber) && smallMinimumNumber > 0
+        ? smallMinimumValue
+        : DEFAULT_POOL_SETTINGS.smallMinimum
+  };
 }
 
 function trimFixed(value) {
@@ -871,6 +941,7 @@ const state = {
   isLoadingMore: false,
   isRefreshing: false,
   visibleSentinelLoadScheduled: false,
+  currentPoolAddress: "",
   refreshTimer: null
 };
 
@@ -908,7 +979,9 @@ function init() {
   initInfiniteScroll();
 
   const initialPool = new URLSearchParams(window.location.search).get("pool") || DEFAULT_POOL_ADDRESS;
+  state.currentPoolAddress = initialPool;
   elements.poolInput.value = initialPool;
+  applyStoredPoolSettings(initialPool, { restoreSmallFilter: false });
   loadTopPools();
   loadPool(initialPool);
   scheduleAutoRefresh();
@@ -944,17 +1017,32 @@ function bindEvents() {
     elements.startTime.value = "";
     elements.endTime.value = "";
     elements.accountInput.value = "";
+    elements.smallTokenSelect.value = "";
     elements.smallMinInput.value = "";
+    saveCurrentPoolSettings();
     renderSwaps();
     if (state.poolView) {
       loadFirstPage();
     }
   });
 
-  elements.smallTokenSelect.addEventListener("change", renderSwaps);
-  elements.smallMinInput.addEventListener("input", renderSwaps);
-  elements.refreshSelect.addEventListener("change", scheduleAutoRefresh);
-  elements.refreshCustom.addEventListener("input", scheduleAutoRefresh);
+  elements.smallTokenSelect.addEventListener("change", () => {
+    saveCurrentPoolSettings();
+    renderSwaps();
+  });
+  elements.smallMinInput.addEventListener("input", () => {
+    saveCurrentPoolSettings();
+    renderSwaps();
+  });
+  elements.refreshSelect.addEventListener("change", () => {
+    elements.refreshCustom.value = "";
+    saveCurrentPoolSettings();
+    scheduleAutoRefresh();
+  });
+  elements.refreshCustom.addEventListener("input", () => {
+    saveCurrentPoolSettings();
+    scheduleAutoRefresh();
+  });
 
   elements.backToTop.addEventListener("click", () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1010,6 +1098,9 @@ async function loadPool(poolAddress) {
   state.isLoading = true;
   state.poolView = null;
   state.allSwaps = [];
+  state.currentPoolAddress = targetPool;
+  applyStoredPoolSettings(targetPool, { restoreSmallFilter: false });
+  scheduleAutoRefresh();
   renderLoading("正在加载池子信息...");
   setStatus("正在加载池子信息...");
   updatePoolUrl(targetPool);
@@ -1023,6 +1114,7 @@ async function loadPool(poolAddress) {
     elements.poolInput.value = targetPool;
     updatePoolHeader();
     updateSmallFilterOptions();
+    applyStoredPoolSettings(targetPool, { restoreSmallFilter: true });
     await loadFirstPage();
     setStatus(`已加载 ${state.poolView.name}`);
   } catch (error) {
@@ -1182,6 +1274,54 @@ function updateSmallFilterOptions() {
     `<option value="">不过滤</option>`,
     ...pool.tokens.map((token) => `<option value="${escapeAttr(token.address)}">${escapeHtml(token.label)}</option>`)
   ].join("");
+}
+
+function applyStoredPoolSettings(poolAddress, { restoreSmallFilter }) {
+  const settings = getPoolSettings(readPoolSettingsMap(), poolAddress);
+  setRefreshControl(settings.refreshSeconds);
+
+  if (restoreSmallFilter) {
+    elements.smallTokenSelect.value = settings.smallTokenAddress;
+    elements.smallMinInput.value = settings.smallMinimum;
+  } else {
+    elements.smallTokenSelect.value = "";
+    elements.smallMinInput.value = "";
+  }
+}
+
+function setRefreshControl(refreshSeconds) {
+  const seconds = Number(refreshSeconds);
+  const standardValues = ["5", "10", "15", "30"];
+  const secondsText = Number.isFinite(seconds) && seconds > 0 ? String(Math.floor(seconds)) : "10";
+
+  if (standardValues.includes(secondsText)) {
+    elements.refreshSelect.value = secondsText;
+    elements.refreshCustom.value = "";
+    return;
+  }
+
+  elements.refreshSelect.value = "10";
+  elements.refreshCustom.value = secondsText;
+}
+
+function saveCurrentPoolSettings() {
+  const poolAddress = getActivePoolAddress();
+  if (!poolAddress) return;
+
+  const nextSettingsByPool = setPoolSettings(readPoolSettingsMap(), poolAddress, {
+    refreshSeconds: getRefreshSeconds(),
+    smallTokenAddress: elements.smallTokenSelect.value,
+    smallMinimum: elements.smallMinInput.value
+  });
+  document.cookie = serializePoolSettingsCookie(nextSettingsByPool);
+}
+
+function readPoolSettingsMap() {
+  return parsePoolSettingsCookie(document.cookie);
+}
+
+function getActivePoolAddress() {
+  return String(state.currentPoolAddress || state.poolView?.address || elements.poolInput.value || "").trim();
 }
 
 function renderSwaps() {
