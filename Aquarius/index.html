@@ -306,6 +306,50 @@ body {
   color: rgb(255 205 210);
 }
 
+.account-label-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.account-filter-button {
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: rgb(82 82 82);
+  cursor: pointer;
+}
+
+.account-filter-button:hover,
+.account-filter-button:focus-visible {
+  border-color: rgb(212 212 212);
+  background: rgb(245 245 245);
+  color: rgb(23 23 23);
+}
+
+.dark .account-filter-button {
+  color: rgb(163 163 163);
+}
+
+.dark .account-filter-button:hover,
+.dark .account-filter-button:focus-visible {
+  border-color: rgb(64 64 64);
+  background: rgb(38 38 38);
+  color: rgb(245 245 245);
+}
+
+.account-filter-button svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+  pointer-events: none;
+}
+
 .side-chip {
   display: inline-flex;
   align-items: center;
@@ -1013,6 +1057,8 @@ function bindEvents() {
     loadFirstPage();
   });
 
+  elements.swapList.addEventListener("click", handleSwapListClick);
+
   elements.clearFiltersButton.addEventListener("click", () => {
     elements.startTime.value = "";
     elements.endTime.value = "";
@@ -1051,6 +1097,22 @@ function bindEvents() {
   window.addEventListener("scroll", () => {
     elements.backToTop.classList.toggle("is-visible", window.scrollY > 420);
   });
+}
+
+function handleSwapListClick(event) {
+  const accountFilterButton = event.target?.closest?.("[data-account-filter-address]");
+  if (!accountFilterButton) return;
+
+  event.preventDefault();
+  applyAccountFilter(accountFilterButton.dataset.accountFilterAddress);
+}
+
+async function applyAccountFilter(accountAddress) {
+  const targetAccount = String(accountAddress || "").trim();
+  if (!targetAccount || !state.poolView) return;
+
+  elements.accountInput.value = targetAccount;
+  await loadFirstPage();
 }
 
 function initInfiniteScroll() {
@@ -1382,7 +1444,20 @@ function renderSwapCard(swap) {
         </div>
 
         <div>
-          <div class="data-label">发起方</div>
+          <div class="account-label-row">
+            <div class="data-label">发起方</div>
+            <button
+              class="account-filter-button"
+              type="button"
+              data-account-filter-address="${escapeAttr(swap.accountAddress)}"
+              title="筛选该发起方交易"
+              aria-label="筛选该发起方交易"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M4 5h16l-6.4 7.4v4.8l-3.2 1.8v-6.6L4 5z" />
+              </svg>
+            </button>
+          </div>
           <div class="mt-1">
             <span class="mono-chip ${escapeAttr(accountMeta.className)}" title="${escapeAttr(swap.accountAddress)}">${escapeHtml(accountMeta.label)}</span>
           </div>
